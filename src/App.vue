@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
-import { ShoppingCart, User, Menu, X } from 'lucide-vue-next'
+import { ShoppingCart, User, Menu, X, Heart } from 'lucide-vue-next'
 
 const isMobileMenuOpen = ref(false)
 
@@ -35,6 +35,10 @@ function closeMobileMenu() {
             <span class="login-text">Iniciar sesión</span>
           </RouterLink>
 
+          <RouterLink to="/lista-deseos" class="wishlist-link" aria-label="Lista de deseos" @click="closeMobileMenu">
+            <Heart class="wishlist-header-icon" :size="21" :stroke-width="2.4" />
+          </RouterLink>
+
           <RouterLink to="/carrito" class="cart-link" aria-label="Carrito" @click="closeMobileMenu">
             <ShoppingCart class="cart-icon" :size="22" :stroke-width="2.4" />
             <span class="cart-count">0</span>
@@ -53,15 +57,12 @@ function closeMobileMenu() {
         </div>
       </div>
 
-      <nav
-        class="mobile-nav"
-        :class="{ 'mobile-nav-open': isMobileMenuOpen }"
-        aria-label="Navegación móvil"
-      >
+      <nav class="mobile-nav" :class="{ 'mobile-nav-open': isMobileMenuOpen }" aria-label="Navegación móvil">
         <RouterLink to="/" @click="closeMobileMenu">Inicio</RouterLink>
         <RouterLink to="/catalogo" @click="closeMobileMenu">Catálogo</RouterLink>
         <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
         <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>
+        <RouterLink to="/lista-deseos" @click="closeMobileMenu">Lista de deseos</RouterLink>
       </nav>
     </header>
 
