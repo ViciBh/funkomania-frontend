@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
 import { products, getPrecioConDescuento, getPrecioConIva } from '@/data/products'
+import { addToCart } from '@/composables/useCart'
 
 const search = ref('')
 const selectedSort = ref('default')
@@ -65,6 +66,8 @@ function getProductFinalPrice(product) {
 function getProductOriginalPrice(product) {
   return getPrecioConIva(product.Precio, product.iva)
 }
+
+
 </script>
 
 <template>
@@ -154,9 +157,15 @@ function getProductOriginalPrice(product) {
                 </span>
                 <span class="product-stock">Stock: {{ product.Stock }}</span>
               </div>
-
-              <button class="add-cart-button" type="button" :disabled="product.Stock === 0">
-                <ShoppingCart :size="17" :stroke-width="2.4" /> Añadir
+              <!-- Cambio al botón para añadir al carro -->
+              <button
+                class="add-cart-button"
+                type="button"
+                :disabled="product.Stock === 0"
+                @click="addToCart(product)"
+              >
+                <ShoppingCart :size="17" :stroke-width="2.4" />
+                Añadir
               </button>
             </div>
           </article>
