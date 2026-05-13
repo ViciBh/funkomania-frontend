@@ -4,17 +4,18 @@ import { RouterLink } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 
-function handleLogin() {
-  console.log('Login:', email.value, password.value)
+function handleRegister() {
+  console.log('Registro:', email.value, password.value, confirmPassword.value)
 }
 </script>
 
 <template>
   <main class="login-page">
     <section class="login-card">
-      <h1>Inicio de sesión</h1>
-      <form class="login-form" @submit.prevent="handleLogin">
+      <h1>Crear cuenta</h1>
+      <form class="login-form" @submit.prevent="handleRegister">
         <label class="login-field">
           <span>Usuario</span>
           <input v-model="email" type="email" placeholder="Introduce tu email" />
@@ -23,9 +24,12 @@ function handleLogin() {
           <span>Contraseña</span>
           <input v-model="password" type="password" placeholder="Introduce tu contraseña" />
         </label>
-        <a href="#" class="forgot-link">¿Has olvidado tu contraseña?</a>
-        <button class="login-button" type="submit">Iniciar sesión</button>
-        <RouterLink to="/registro" class="register-button">Crear cuenta</RouterLink>
+        <label class="login-field">
+          <span>Repetir contraseña</span>
+          <input v-model="confirmPassword" type="password" placeholder="Repite tu contraseña" />
+        </label>
+        <button class="login-button" type="submit">Crear cuenta</button>
+        <RouterLink to="/login" class="forgot-link">Ya tengo cuenta</RouterLink>
       </form>
     </section>
   </main>

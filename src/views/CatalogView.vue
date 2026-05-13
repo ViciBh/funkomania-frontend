@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
 import { products, getPrecioConDescuento, getPrecioConIva } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
+import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 
 const search = ref('')
 const selectedSort = ref('default')
@@ -66,11 +67,9 @@ function getProductFinalPrice(product) {
 function getProductOriginalPrice(product) {
   return getPrecioConIva(product.Precio, product.iva)
 }
-
-
 </script>
-
 <template>
+
   <main class="catalog-page">
     <section class="catalog-title">
       <h1>Artículos</h1>
@@ -136,8 +135,8 @@ function getProductOriginalPrice(product) {
                 <span v-if="product.Stock === 0" class="product-badge product-badge-disabled">Agotado</span>
               </div>
 
-              <button class="wishlist-button" type="button" aria-label="Añadir a favoritos">
-                <Heart :size="18" :stroke-width="2.4" />
+              <button class="wishlist-button" type="button" @click="toggleWishlist(product)">
+                <Heart :size="18" :stroke-width="2.4" :fill="isInWishlist(product.idProducto) ? '#f888b4' : 'none'" />
               </button>
             </div>
 
@@ -158,12 +157,7 @@ function getProductOriginalPrice(product) {
                 <span class="product-stock">Stock: {{ product.Stock }}</span>
               </div>
               <!-- Cambio al botón para añadir al carro -->
-              <button
-                class="add-cart-button"
-                type="button"
-                :disabled="product.Stock === 0"
-                @click="addToCart(product)"
-              >
+              <button class="add-cart-button" type="button" :disabled="product.Stock === 0" @click="addToCart(product)">
                 <ShoppingCart :size="17" :stroke-width="2.4" />
                 Añadir
               </button>

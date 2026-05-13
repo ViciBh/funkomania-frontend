@@ -8,9 +8,7 @@ import { addToCart } from '@/composables/useCart'
 const offerProducts = computed(() => {
   return products.filter(
     (product) =>
-      product.Activo === 1 &&
-      product.EnOferta === 1 &&
-      product.Descuento > 0
+      product.Activo === 1 && product.EnOferta === 1 && product.Descuento > 0
   )
 })
 
@@ -32,26 +30,15 @@ function getProductOriginalPrice(product) {
 
     <section class="offers-content">
       <div class="offers-top">
-        <p>
-          Mostrando <strong>{{ offerProducts.length }}</strong> ofertas disponibles
-        </p>
-
-        <RouterLink to="/catalogo" class="offers-catalog-link">
-          Ver todo el catálogo
-        </RouterLink>
+        <p>Mostrando <strong>{{ offerProducts.length }}</strong> ofertas disponibles</p>
+        <RouterLink to="/catalogo" class="offers-catalog-link">Ver todo el catálogo</RouterLink>
       </div>
 
       <div v-if="offerProducts.length > 0" class="offers-grid">
-        <article
-          v-for="product in offerProducts"
-          :key="product.idProducto"
-          class="offer-card"
-        >
+        <article v-for="product in offerProducts" :key="product.idProducto" class="offer-card">
           <div class="offer-image-wrap">
             <img :src="product.Image" :alt="product.Nombre" class="offer-image" />
-
             <span class="offer-discount">-{{ product.Descuento }}%</span>
-
             <button class="wishlist-button" type="button" aria-label="Favoritos">
               <Heart :size="18" :stroke-width="2.4" />
             </button>
@@ -68,22 +55,13 @@ function getProductOriginalPrice(product) {
             </div>
 
             <div class="offer-meta">
-              <span
-                class="product-status"
-                :class="{ 'product-status-disabled': product.Stock === 0 }"
-              >
+              <span class="product-status" :class="{ 'product-status-disabled': product.Stock === 0 }">
                 {{ product.Stock > 0 ? 'Disponible' : 'Agotado' }}
               </span>
-
               <span class="product-stock">Stock: {{ product.Stock }}</span>
             </div>
 
-            <button
-              class="add-cart-button"
-              type="button"
-              :disabled="product.Stock === 0"
-              @click="addToCart(product)"
-            >
+            <button class="add-cart-button" type="button" :disabled="product.Stock === 0" @click="addToCart(product)">
               <ShoppingCart :size="17" :stroke-width="2.4" />
               Añadir
             </button>
@@ -94,9 +72,7 @@ function getProductOriginalPrice(product) {
       <div v-else class="empty-products">
         <h2>No hay ofertas disponibles</h2>
         <p>Vuelve más tarde para descubrir nuevas promociones.</p>
-        <RouterLink to="/catalogo" class="empty-link">
-          Ir al catálogo
-        </RouterLink>
+        <RouterLink to="/catalogo" class="empty-link">Ir al catálogo</RouterLink>
       </div>
     </section>
   </main>

@@ -6,6 +6,8 @@ import CategoriesView from '../views/CategoriesView.vue'
 import OffersView from '../views/OffersView.vue'
 import LoginView from '../views/LoginView.vue'
 import CartView from '../views/CartView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import WishlistView from '../views/WishlistView.vue'
 
 const routes = [
   {
@@ -37,6 +39,16 @@ const routes = [
     path: '/carrito',
     name: 'cart',
     component: CartView
+  },
+  {
+    path: '/registro',
+    name: 'register',
+    component: RegisterView
+  },
+  {
+    path: '/lista-deseos',
+    name: 'wishlist',
+    component: WishlistView
   }
 ]
 
