@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
 import { products, categories, getPrecioConDescuento, getPrecioConIva, isOfertaActiva, productMatchesCategory, getProductImage } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
@@ -9,6 +10,15 @@ const search = ref('')
 const selectedSort = ref('default')
 const selectedPrice = ref('all')
 const selectedCategories = ref([])
+const route = useRoute()
+
+watch(
+  () => route.query.categoria,
+  (category) => {
+    selectedCategories.value = category ? [category] : []
+  },
+  { immediate: true }
+)
 
 const activeProducts = computed(() => {
   return products.filter((product) => product.Activo === 1)
