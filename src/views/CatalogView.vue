@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
-import { products, getPrecioConDescuento, getPrecioConIva } from '@/data/products'
+import { products, categories, getPrecioConDescuento, getPrecioConIva, isOfertaActiva, productMatchesCategory, getProductImage } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 
@@ -14,8 +14,8 @@ const activeProducts = computed(() => {
   return products.filter((product) => product.Activo === 1)
 })
 
-const categories = computed(() => {
-  return [...new Set(activeProducts.value.map((product) => product.NombreCategoria))]
+const categoryOptions = computed(() => {
+  return categories
 })
 
 const filteredProducts = computed(() => {
@@ -28,9 +28,11 @@ const filteredProducts = computed(() => {
     const matchesSearch =
       product.Nombre.toLowerCase().includes(searchText) ||
       product.NombreCategoria.toLowerCase().includes(searchText) ||
-      (product.NombreCategoriaPadre || '').toLowerCase().includes(searchText)
+      (product.NombreCategoriaPadre || '').toLowerCase().includes(searchText) ||
+      product.CategoriaPath.join(' ').toLowerCase().includes(searchText)
 
-    const matchesCategory = selectedCategories.value.length === 0 || selectedCategories.value.includes(product.NombreCategoria)
+    // Filtra también por categorías padre usando CategoriaPath
+    const matchesCategory = selectedCategories.value.length === 0 || selectedCategories.value.some((category) => productMatchesCategory(product, category))
 
     const matchesPrice =
       selectedPrice.value === 'all' ||
@@ -68,17 +70,16 @@ function getProductOriginalPrice(product) {
   return getPrecioConIva(product.Precio, product.iva)
 }
 </script>
-<template>
 
+<template>
   <main class="catalog-page">
     <section class="catalog-title">
       <h1>Artículos</h1>
       <p>Explora todos los productos disponibles en Funkomanía.</p>
     </section>
-
     <section class="catalog-search-bar">
       <Search :size="18" :stroke-width="2.4" />
-      <input v-model="search" type="search" placeholder="Barra de búsqueda"/>
+      <input v-model="search" type="search" placeholder="Barra de búsqueda" />
     </section>
 
     <section class="catalog-layout">
@@ -110,13 +111,11 @@ function getProductOriginalPrice(product) {
 
         <div class="filter-categories">
           <h3>Categorías</h3>
-
-          <label v-for="category in categories" :key="category" class="filter-checkbox">
-            <input v-model="selectedCategories" type="checkbox" :value="category" />
-            <span>{{ category }}</span>
+          <label v-for="category in categoryOptions" :key="category.idCategoria" class="filter-checkbox">
+            <input v-model="selectedCategories" type="checkbox" :value="category.Nombre" />
+            <span>{{ category.Nombre }}</span>
           </label>
         </div>
-
         <button class="reset-filters" type="button" @click="resetFilters">Limpiar</button>
       </aside>
 
@@ -124,39 +123,34 @@ function getProductOriginalPrice(product) {
         <div class="catalog-content-header">
           <p>Mostrando <strong>{{ filteredProducts.length }}</strong> productos</p>
         </div>
-
         <div v-if="filteredProducts.length > 0" class="products-grid">
           <article v-for="product in filteredProducts" :key="product.idProducto" class="product-card">
             <div class="product-image-wrap">
-              <img :src="product.Image" :alt="product.Nombre" class="product-image"/>
-
+              <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="product-image" />
+              <div v-else class="product-image-placeholder">Sin imagen</div>
               <div class="product-badges">
-                <span v-if="product.EnOferta === 1" class="product-badge product-badge-offer">-{{ product.Descuento }}%</span>
+                <span v-if="isOfertaActiva(product)" class="product-badge product-badge-offer">-{{ product.Descuento }}%</span>
                 <span v-if="product.Stock === 0" class="product-badge product-badge-disabled">Agotado</span>
               </div>
-
               <button class="wishlist-button" type="button" @click="toggleWishlist(product)">
                 <Heart :size="18" :stroke-width="2.4" :fill="isInWishlist(product.idProducto) ? '#f888b4' : 'none'" />
               </button>
             </div>
-
             <div class="product-info">
-              <p class="product-category">{{ product.NombreCategoria }}</p>
+              <p class="product-category">{{ product.NombreCategoria}}</p>
               <h2>{{ product.Nombre }}</h2>
               <p class="product-saga">{{ product.NombreCategoriaPadre || 'Colección principal' }}</p>
-
               <div class="product-price-row">
                 <strong>{{ getProductFinalPrice(product).toFixed(2) }}€</strong>
-                <span v-if="product.EnOferta === 1" class="old-price">{{ getProductOriginalPrice(product).toFixed(2) }}€</span>
+                <span v-if="isOfertaActiva(product)" class="old-price">{{ getProductOriginalPrice(product).toFixed(2) }}€</span>
               </div>
-
               <div class="product-meta">
                 <span class="product-status" :class="{ 'product-status-disabled': product.Stock === 0 }">
                   {{ product.Stock > 0 ? 'Disponible' : 'Agotado' }}
                 </span>
                 <span class="product-stock">Stock: {{ product.Stock }}</span>
               </div>
-              <!-- Cambio al botón para añadir al carro -->
+              <!-- botón para añadir al carrito -->
               <button class="add-cart-button" type="button" :disabled="product.Stock === 0" @click="addToCart(product)">
                 <ShoppingCart :size="17" :stroke-width="2.4" />
                 Añadir
@@ -164,7 +158,6 @@ function getProductOriginalPrice(product) {
             </div>
           </article>
         </div>
-
         <div v-else class="empty-products">
           <h2>No se encontraron productos</h2>
           <p>Prueba con otra búsqueda o limpia los filtros.</p>
