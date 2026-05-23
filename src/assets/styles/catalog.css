@@ -4,8 +4,15 @@
 }
 
 .catalog-title {
-  width: min(1180px, 100%);
-  margin: 0 auto 18px;
+  width: min(980px, 100%);
+  margin: 0 auto 24px;
+  padding: 28px 24px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(187, 87, 254, 0.28), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #e2d8ea 100%);
+  border: 2px solid var(--color-border);
+  text-align: center;
 }
 
 .catalog-title h1 {
@@ -21,6 +28,15 @@
   color: var(--color-text-secondary);
   font-size: 15px;
   text-align: center;
+}
+
+.catalog-kicker {
+  margin: 0 0 6px;
+  color: var(--color-accent-second);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
 }
 
 .catalog-search-bar {

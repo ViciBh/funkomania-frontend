@@ -57,10 +57,7 @@ onBeforeUnmount(() => {
 <template>
   <main class="categories-page" ref="categoriesPageRef">
     <section class="categories-header">
-      <div class="categories-icon"><Sparkles :size="34" :stroke-width="2.5" /></div>
-      <p class="categories-kicker">Categorías</p>
-      <h1>Explora por temática</h1>
-      <p>Abre una categoría principal para ver sus subcategorías y acceder al catálogo filtrado.</p>
+      <h1 class="categories-kicker">Categorías</h1>
     </section>
 
     <section class="categories-grid">

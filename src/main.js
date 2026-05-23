@@ -10,6 +10,7 @@ import './assets/styles/categories.css'
 import './assets/styles/cart.css'
 import './assets/styles/login.css'
 import './assets/styles/wishlist.css'
+import './assets/styles/cartsidebar.css'
 
 createApp(App)
   .use(router)

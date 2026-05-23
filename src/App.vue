@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { ShoppingCart, User, Menu, X, Heart } from 'lucide-vue-next'
 import { cartCount } from '@/composables/useCart'
+import CartSidebar from '@/components/CartSidebar.vue'
 
 const isMobileMenuOpen = ref(false)
+const isCartOpen = ref(false)
 
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -12,6 +14,15 @@ function toggleMobileMenu() {
 
 function closeMobileMenu() {
   isMobileMenuOpen.value = false
+}
+
+function openCart() {
+  isCartOpen.value = true
+  closeMobileMenu()
+}
+
+function closeCart() {
+  isCartOpen.value = false
 }
 </script>
 
@@ -40,13 +51,14 @@ function closeMobileMenu() {
             <Heart class="wishlist-header-icon" :size="21" :stroke-width="2.4"/>
           </RouterLink>
 
-          <RouterLink to="/carrito" class="cart-link" @click="closeMobileMenu">
+          <button class="cart-link" type="button" @click="openCart">
             <ShoppingCart class="cart-icon" :size="22" :stroke-width="2.4"/>
             <!-- contador dinámico -->
             <span v-if="cartCount > 0" class="cart-count">
               {{ cartCount }}
             </span>
-          </RouterLink>
+          </button>
+
           <button class="burger-button" type="button" @click="toggleMobileMenu">
             <X v-if="isMobileMenuOpen" :size="24" :stroke-width="2.5" />
             <Menu v-else :size="24" :stroke-width="2.5" />
@@ -73,5 +85,6 @@ function closeMobileMenu() {
         </nav>
       </div>
     </footer>
+    <CartSidebar :open="isCartOpen" @close="closeCart" />
   </div>
 </template>

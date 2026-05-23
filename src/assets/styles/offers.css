@@ -10,7 +10,7 @@
   border-radius: 28px;
   background:
     radial-gradient(circle at top left, rgba(254, 221, 87, 0.28), transparent 34%),
-    linear-gradient(135deg, #ffffff 0%, #fff7df 100%);
+    linear-gradient(135deg, #ffffff 0%, #fff2bd 100%);
   border: 2px solid var(--color-border);
   text-align: center;
 }

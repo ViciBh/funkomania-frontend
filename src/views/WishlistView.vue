@@ -18,11 +18,9 @@ function removeItem(idProducto) {
 <template>
   <main class="wishlist-page">
     <section class="wishlist-header">
-      <div class="wishlist-icon"><Heart :size="34" :stroke-width="2.5" /></div>
-      <p class="wishlist-kicker">Lista de deseos</p>
-      <h1>Tus productos favoritos</h1>
+      <h1 class="wishlist-kicker">Lista de deseos</h1>
+      <p>Tus productos favoritos</p>
     </section>
-
     <section class="wishlist-content">
       <div v-if="wishlist.length > 0" class="wishlist-grid">
         <article v-for="product in wishlist" :key="product.idProducto" class="wishlist-card">

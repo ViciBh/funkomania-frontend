@@ -150,12 +150,14 @@ button {
   width: 46px;
   height: 46px;
   min-width: 46px;
+  border: none;
   border-radius: 50%;
   background: var(--color-primary);
   color: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: background 0.2s ease;
 }
 

@@ -84,7 +84,7 @@ function getProductOriginalPrice(product) {
 <template>
   <main class="catalog-page">
     <section class="catalog-title">
-      <h1>Artículos</h1>
+      <h1 class="catalog-kicker">Artículos</h1>
       <p>Explora todos los productos disponibles en Funkomanía.</p>
     </section>
     <section class="catalog-search-bar">
