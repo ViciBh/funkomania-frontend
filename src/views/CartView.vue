@@ -1,6 +1,6 @@
 <script setup>
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-vue-next'
-import { getCart, increaseQuantity, decreaseQuantity, removeProductFromCart, clearCart, cartTotal } from '@/composables/useCart'
+import { getCart, increaseQuantity, decreaseQuantity, removeProductFromCart, clearCart, cartBaseTotal, cartIvaTotal, cartTotal } from '@/composables/useCart'
 import { getProductImage } from '@/data/products'
 
 const cart = getCart()
@@ -21,7 +21,8 @@ const cart = getCart()
           </div>
           <div class="cart-item-info">
             <h2>{{ product.Nombre }}</h2>
-            <p>Precio unitario: {{ product.Precio.toFixed(2) }}€</p>
+            <p>Precio sin IVA: {{ product.PrecioSinIva.toFixed(2) }}€</p>
+            <p>Precio con IVA: {{ product.PrecioConIva.toFixed(2) }}€</p>
             <div class="cart-item-controls">
               <button type="button" @click="decreaseQuantity(product.idProducto)">
                 <Minus :size="16" :stroke-width="2.5" />
@@ -37,24 +38,28 @@ const cart = getCart()
           </div>
           <div class="cart-item-subtotal">
             <span>Subtotal</span>
-            <strong>{{ (product.Precio * product.Cantidad).toFixed(2) }}€</strong>
+            <strong>{{ (product.PrecioConIva * product.Cantidad).toFixed(2) }}€</strong>
           </div>
         </article>
       </div>
-
       <aside class="cart-summary">
         <h2>Resumen</h2>
-
         <div class="cart-summary-row">
-          <span>Total</span>
+          <span>Base imponible</span>
+          <strong>{{ cartBaseTotal.toFixed(2) }}€</strong>
+        </div>
+        <div class="cart-summary-row">
+          <span>IVA incluido</span>
+          <strong>{{ cartIvaTotal.toFixed(2) }}€</strong>
+        </div>
+        <div class="cart-summary-row">
+          <span>Total con IVA</span>
           <strong>{{ cartTotal.toFixed(2) }}€</strong>
         </div>
-
         <button class="cart-checkout-button" type="button">Finalizar compra</button>
         <button class="cart-clear-button" type="button" @click="clearCart">Vaciar carrito</button>
       </aside>
     </section>
-
     <section v-else class="cart-empty">
       <ShoppingCart :size="48" :stroke-width="2.2" />
       <h2>Tu carrito está vacío</h2>

@@ -2,13 +2,9 @@
 import { Heart, ShoppingCart, Trash2 } from 'lucide-vue-next'
 import { getWishlist, removeFromWishlist } from '@/composables/useWishlist'
 import { addToCart } from '@/composables/useCart'
-import { getPrecioConDescuento, getPrecioConIva, getProductImage, isOfertaActiva } from '@/data/products'
+import { getProductImage, isOfertaActiva } from '@/data/products'
 
 const wishlist = getWishlist()
-
-function getProductFinalPrice(product) {
-  return getPrecioConIva(getPrecioConDescuento(product), product.iva)
-}
 
 function removeItem(idProducto) {
   removeFromWishlist(idProducto)
@@ -27,17 +23,14 @@ function removeItem(idProducto) {
           <div class="wishlist-image-wrap">
             <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="wishlist-image" />
             <div v-else class="wishlist-image-placeholder">Sin imagen</div>
-            <button class="wishlist-remove-icon" type="button" @click="removeItem(product.idProducto)">
-              <Trash2 :size="18" :stroke-width="2.4" />
-            </button>
           </div>
           <div class="wishlist-info">
             <p class="wishlist-category">{{ product.NombreCategoria }}</p>
             <h2>{{ product.Nombre }}</h2>
             <p class="wishlist-description">{{ product.Descripcion }}</p>
             <div class="wishlist-price-row">
-              <strong>{{ getProductFinalPrice(product) }}€</strong>
-              <span v-if="isOfertaActiva(product)">{{ getPrecioConIva(product.Precio, product.iva) }}€</span>
+              <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>
+              <span v-if="isOfertaActiva(product)">{{ product.PrecioOriginal_ConIVA.toFixed(2) }}€</span>
             </div>
             <div class="wishlist-actions">
               <button class="wishlist-action-button wishlist-cart-button" type="button" :disabled="product.Stock === 0" @click="addToCart(product)">

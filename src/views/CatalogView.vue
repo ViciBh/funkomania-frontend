@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
-import { products, categories, getPrecioConDescuento, getPrecioConIva, isOfertaActiva, productMatchesCategory, getProductImage } from '@/data/products'
+import { products, categories, isOfertaActiva, productMatchesCategory, getProductImage, getCategoryPathText } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 
@@ -30,37 +30,29 @@ const categoryOptions = computed(() => {
 
 const filteredProducts = computed(() => {
   const searchText = search.value.trim().toLowerCase()
-
   const filtered = activeProducts.value.filter((product) => {
-    const finalPriceWithoutIva = getPrecioConDescuento(product)
-    const finalPriceWithIva = getPrecioConIva(finalPriceWithoutIva, product.iva)
-
     const matchesSearch =
       product.Nombre.toLowerCase().includes(searchText) ||
       product.NombreCategoria.toLowerCase().includes(searchText) ||
       (product.NombreCategoriaPadre || '').toLowerCase().includes(searchText) ||
-      product.CategoriaPath.join(' ').toLowerCase().includes(searchText)
-
-    // Filtra también por categorías padre usando CategoriaPath
-    const matchesCategory = selectedCategories.value.length === 0 || selectedCategories.value.some((category) => productMatchesCategory(product, category))
+      getCategoryPathText(product.idCategoria).toLowerCase().includes(searchText)
+    // Filtra también por categorías padre usando la función auxiliar
+    const matchesCategory = selectedCategories.value.length === 0 ||
+      selectedCategories.value.some((category) => productMatchesCategory(product, category))
 
     const matchesPrice =
       selectedPrice.value === 'all' ||
-      (selectedPrice.value === 'low' && finalPriceWithIva < 15) ||
-      (selectedPrice.value === 'medium' && finalPriceWithIva >= 15 && finalPriceWithIva <= 25) ||
-      (selectedPrice.value === 'high' && finalPriceWithIva > 25)
+      (selectedPrice.value === 'low' && product.PrecioFinal_ConIVA < 15) ||
+      (selectedPrice.value === 'medium' && product.PrecioFinal_ConIVA >= 15 && product.PrecioFinal_ConIVA <= 25) ||
+      (selectedPrice.value === 'high' && product.PrecioFinal_ConIVA > 25)
 
     return matchesSearch && matchesCategory && matchesPrice
   })
 
   return filtered.sort((a, b) => {
-    const priceA = getProductFinalPrice(a)
-    const priceB = getProductFinalPrice(b)
-
-    if (selectedSort.value === 'price-asc') return priceA - priceB
-    if (selectedSort.value === 'price-desc') return priceB - priceA
+    if (selectedSort.value === 'price-asc') return a.PrecioFinal_ConIVA - b.PrecioFinal_ConIVA
+    if (selectedSort.value === 'price-desc') return b.PrecioFinal_ConIVA - a.PrecioFinal_ConIVA
     if (selectedSort.value === 'name-asc') return a.Nombre.localeCompare(b.Nombre)
-
     return 0
   })
 })
@@ -70,14 +62,6 @@ function resetFilters() {
   selectedSort.value = 'default'
   selectedPrice.value = 'all'
   selectedCategories.value = []
-}
-
-function getProductFinalPrice(product) {
-  return getPrecioConIva(getPrecioConDescuento(product), product.iva)
-}
-
-function getProductOriginalPrice(product) {
-  return getPrecioConIva(product.Precio, product.iva)
 }
 </script>
 
@@ -128,7 +112,6 @@ function getProductOriginalPrice(product) {
         </div>
         <button class="reset-filters" type="button" @click="resetFilters">Limpiar</button>
       </aside>
-
       <section class="catalog-content">
         <div class="catalog-content-header">
           <p>Mostrando <strong>{{ filteredProducts.length }}</strong> productos</p>
@@ -147,12 +130,12 @@ function getProductOriginalPrice(product) {
               </button>
             </div>
             <div class="product-info">
-              <p class="product-category">{{ product.NombreCategoria}}</p>
+              <p class="product-category">{{ product.NombreCategoria }}</p>
               <h2>{{ product.Nombre }}</h2>
               <p class="product-saga">{{ product.NombreCategoriaPadre || 'Colección principal' }}</p>
               <div class="product-price-row">
-                <strong>{{ getProductFinalPrice(product).toFixed(2) }}€</strong>
-                <span v-if="isOfertaActiva(product)" class="old-price">{{ getProductOriginalPrice(product).toFixed(2) }}€</span>
+                <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>
+                <span v-if="isOfertaActiva(product)" class="old-price">{{ product.PrecioOriginal_ConIVA.toFixed(2) }}€</span>
               </div>
               <div class="product-meta">
                 <span class="product-status" :class="{ 'product-status-disabled': product.Stock === 0 }">

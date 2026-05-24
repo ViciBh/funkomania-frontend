@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink } from 'vue-router'
-import { Sparkles, ChevronDown, ChevronRight, ArrowRight } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-vue-next'
 import { categories, products, productMatchesCategory } from '@/data/products'
 
 const openCategories = ref([])
@@ -59,7 +59,6 @@ onBeforeUnmount(() => {
     <section class="categories-header">
       <h1 class="categories-kicker">Categorías</h1>
     </section>
-
     <section class="categories-grid">
       <article v-for="category in parentCategories" :key="category.idCategoria" class="category-card">
         <button class="category-card-main" type="button" @click.stop="toggleCategory(category.idCategoria)">
@@ -68,19 +67,16 @@ onBeforeUnmount(() => {
             <h2>{{ category.Nombre }}</h2>
             <p>{{ getCategoryTotal(category.Nombre) }} productos</p>
           </div>
-
           <span class="category-arrow">
             <ChevronDown v-if="isOpen(category.idCategoria)" :size="22" :stroke-width="2.5" />
             <ChevronRight v-else :size="22" :stroke-width="2.5" />
           </span>
         </button>
-
         <div v-if="isOpen(category.idCategoria)" class="category-dropdown">
           <RouterLink :to="{ path: '/catalogo', query: { categoria: category.Nombre } }" class="category-view-all">
             Ver todo {{ category.Nombre }}
             <ArrowRight :size="17" :stroke-width="2.5" />
           </RouterLink>
-
           <div v-if="hasChildren(category.idCategoria)" class="category-children">
             <template v-for="child in getChildren(category.idCategoria)" :key="child.idCategoria">
               <button v-if="hasChildren(child.idCategoria)" class="category-child-row" type="button" @click.stop="toggleCategory(child.idCategoria)">
@@ -89,19 +85,16 @@ onBeforeUnmount(() => {
                 <ChevronDown v-if="isOpen(child.idCategoria)" :size="17" :stroke-width="2.5" />
                 <ChevronRight v-else :size="17" :stroke-width="2.5" />
               </button>
-
               <RouterLink v-else :to="{ path: '/catalogo', query: { categoria: child.Nombre } }" class="category-child-row">
                 <span>{{ child.Nombre }}</span>
                 <small>{{ getCategoryTotal(child.Nombre) }} productos</small>
                 <ArrowRight :size="16" :stroke-width="2.5" />
               </RouterLink>
-
               <div v-if="hasChildren(child.idCategoria) && isOpen(child.idCategoria)" class="category-subchildren">
                 <RouterLink :to="{ path: '/catalogo', query: { categoria: child.Nombre } }" class="category-subchild-row category-subchild-all">
                   Ver todo {{ child.Nombre }}
                   <ArrowRight :size="15" :stroke-width="2.5" />
                 </RouterLink>
-
                 <RouterLink v-for="subchild in getChildren(child.idCategoria)" :key="subchild.idCategoria" :to="{ path: '/catalogo', query: { categoria: subchild.Nombre } }" class="category-subchild-row">
                   <span>{{ subchild.Nombre }}</span>
                   <small>{{ getCategoryTotal(subchild.Nombre) }} productos</small>
@@ -109,7 +102,6 @@ onBeforeUnmount(() => {
               </div>
             </template>
           </div>
-
           <p v-else class="category-empty">No hay subcategorías.</p>
         </div>
       </article>

@@ -1,10 +1,13 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+
 const wishlist = ref(JSON.parse(localStorage.getItem('wishlist')) || [])
-export const wishlistCount = ref(wishlist.value.length)
+
+export const wishlistCount = computed(() => {
+  return wishlist.value.length
+})
 
 function saveWishlist() {
   localStorage.setItem('wishlist', JSON.stringify(wishlist.value))
-  wishlistCount.value = wishlist.value.length
 }
 
 export function getWishlist() {

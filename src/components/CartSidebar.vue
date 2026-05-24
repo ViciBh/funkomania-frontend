@@ -29,7 +29,7 @@ const cart = getCart()
           </div>
           <div class="cart-sidebar-info">
             <h3>{{ product.Nombre }}</h3>
-            <p>{{ product.Precio.toFixed(2) }}€</p>
+            <p>{{ product.PrecioConIva.toFixed(2) }}€</p>
             <div class="cart-sidebar-controls">
               <button type="button" @click="decreaseQuantity(product.idProducto)">
                 <Minus :size="15" :stroke-width="2.5" />

@@ -11,8 +11,16 @@ export const cartCount = computed(() => {
   return cart.value.reduce((sum, product) => sum + product.Cantidad, 0)
 })
 
+export const cartBaseTotal = computed(() => {
+  return Number(cart.value.reduce((sum, product) => sum + product.PrecioSinIva * product.Cantidad, 0).toFixed(2))
+})
+
+export const cartIvaTotal = computed(() => {
+  return Number((cartTotal.value - cartBaseTotal.value).toFixed(2))
+})
+
 export const cartTotal = computed(() => {
-  return cart.value.reduce((sum, product) => sum + product.Precio * product.Cantidad, 0)
+  return Number(cart.value.reduce((sum, product) => sum + product.PrecioConIva * product.Cantidad, 0).toFixed(2))
 })
 
 export function getCart() {
@@ -28,7 +36,9 @@ export function addToCart(product) {
     cart.value.push({
       idProducto: product.idProducto,
       Nombre: product.Nombre,
-      Precio: product.Precio,
+      PrecioSinIva: product.PrecioFinal_SinIVA,
+      PrecioConIva: product.PrecioFinal_ConIVA,
+      iva: product.iva,
       Image: product.Image,
       Stock: product.Stock,
       Cantidad: 1

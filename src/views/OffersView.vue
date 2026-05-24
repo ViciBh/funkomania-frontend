@@ -1,22 +1,9 @@
 <script setup>
-import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { ShoppingCart, Heart } from 'lucide-vue-next'
-import { products, getPrecioConDescuento, getPrecioConIva, isOfertaActiva, getProductImage } from '@/data/products'
+import { productosOfertas, getProductImage } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
-
-const offerProducts = computed(() => {
-  return products.filter((product) => product.Activo === 1 && isOfertaActiva(product))
-})
-
-function getProductFinalPrice(product) {
-  return getPrecioConIva(getPrecioConDescuento(product), product.iva)
-}
-
-function getProductOriginalPrice(product) {
-  return getPrecioConIva(product.Precio, product.iva)
-}
 </script>
 
 <template>
@@ -27,11 +14,11 @@ function getProductOriginalPrice(product) {
     </section>
     <section class="offers-content">
       <div class="offers-top">
-        <p>Mostrando <strong>{{ offerProducts.length }}</strong> ofertas disponibles</p>
+        <p>Mostrando <strong>{{ productosOfertas.length }}</strong> ofertas disponibles</p>
         <RouterLink to="/catalogo" class="offers-catalog-link">Ver todo el catálogo</RouterLink>
       </div>
-      <div v-if="offerProducts.length > 0" class="offers-grid">
-        <article v-for="product in offerProducts" :key="product.idProducto" class="offer-card">
+      <div v-if="productosOfertas.length > 0" class="offers-grid">
+        <article v-for="product in productosOfertas" :key="product.idProducto" class="offer-card">
           <div class="offer-image-wrap">
             <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="offer-image" />
             <div v-else class="offer-image-placeholder">Sin imagen</div>
@@ -45,8 +32,8 @@ function getProductOriginalPrice(product) {
             <h2>{{ product.Nombre }}</h2>
             <p class="offer-description">{{ product.Descripcion }}</p>
             <div class="offer-price-row">
-              <strong>{{ getProductFinalPrice(product).toFixed(2) }}€</strong>
-              <span>{{ getProductOriginalPrice(product).toFixed(2) }}€</span>
+              <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>
+              <span>{{ product.PrecioOriginal_ConIVA.toFixed(2) }}€</span>
             </div>
             <div class="offer-meta">
               <span class="product-status" :class="{ 'product-status-disabled': product.Stock === 0 }">
