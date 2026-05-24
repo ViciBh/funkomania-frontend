@@ -15,7 +15,7 @@ function removeItem(idProducto) {
 <template>
   <main class="wishlist-page">
     <section class="wishlist-header">
-      <h1 class="wishlist-kicker">Lista de deseos</h1>
+      <h1 class="wishlist-kicker">Lista de deseo</h1>
       <p>Tus productos favoritos</p>
     </section>
     <section class="wishlist-content">

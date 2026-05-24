@@ -27,21 +27,13 @@
   justify-content: center;
 }
 
-.categories-kicker {
-  margin: 0 0 6px;
-  color: var(--color-support);
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-
 .categories-header h1 {
   margin: 0 0 8px;
   color: var(--color-primary);
   font-size: 32px;
+  font-weight: 900;
   line-height: 1.1;
+  text-transform: uppercase;
 }
 
 .categories-header p {

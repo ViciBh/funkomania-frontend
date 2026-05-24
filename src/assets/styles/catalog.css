@@ -19,6 +19,7 @@
   margin: 0 0 6px;
   color: var(--color-primary);
   font-size: 34px;
+  font-weight: 900;
   text-transform: uppercase;
   text-align: center;
 }
@@ -28,15 +29,6 @@
   color: var(--color-text-secondary);
   font-size: 15px;
   text-align: center;
-}
-
-.catalog-kicker {
-  margin: 0 0 6px;
-  color: var(--color-accent-second);
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
 }
 
 .catalog-search-bar {
@@ -491,7 +483,6 @@
 
   .catalog-title h1 {
     font-size: 28px;
-    text-align: center;
   }
 
   .catalog-search-bar {

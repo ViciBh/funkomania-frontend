@@ -27,20 +27,13 @@
   justify-content: center;
 }
 
-.offers-kicker {
-  margin: 0 0 6px;
-  color: var(--color-accent-second);
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
 .offers-header h1 {
   margin: 0 0 8px;
   color: var(--color-primary);
   font-size: 32px;
+  font-weight: 900;
   line-height: 1.1;
+  text-transform: uppercase;
 }
 
 .offers-header p {

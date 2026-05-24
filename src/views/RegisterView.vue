@@ -2,17 +2,29 @@
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+const nombre = ref('')
+const apellido1 = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
 function handleRegister() {
+  if (!nombre.value || !apellido1.value || !email.value || !password.value || !confirmPassword.value) {
+    console.log('Completa los campos obligatorios')
+    return
+  }
+
   if (password.value !== confirmPassword.value) {
     console.log('Las contraseñas no coinciden')
     return
   }
 
-  console.log('Registro:', email.value, password.value)
+  console.log('Registro:', {
+    Nombre: nombre.value,
+    Apellido1: apellido1.value,
+    email: email.value,
+    password: password.value
+  })
 }
 </script>
 
@@ -24,6 +36,16 @@ function handleRegister() {
         <label class="login-field">
           <span>Usuario</span>
           <input v-model="email" type="email" placeholder="Introduce tu email" />
+        </label>
+
+        <label class="login-field">
+          <span>Nombre</span>
+          <input v-model="nombre" type="text" placeholder="Introduce tu nombre" />
+        </label>
+
+        <label class="login-field">
+          <span>Primer apellido</span>
+          <input v-model="apellido1" type="text" placeholder="Introduce tu primer apellido" />
         </label>
 
         <label class="login-field">

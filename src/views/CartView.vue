@@ -59,7 +59,7 @@ const cart = getCart()
           <span>Total con IVA</span>
           <strong>{{ cartTotal.toFixed(2) }}€</strong>
         </div>
-        <button class="cart-checkout-button" type="button">Finalizar compra</button>
+        <RouterLink to="/checkout" class="cart-checkout-button">Finalizar compra</RouterLink>
         <button class="cart-clear-button" type="button" @click="clearCart">Vaciar carrito</button>
       </aside>
     </section>
