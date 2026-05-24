@@ -11,6 +11,7 @@ import './assets/styles/cart.css'
 import './assets/styles/login.css'
 import './assets/styles/wishlist.css'
 import './assets/styles/cartsidebar.css'
+import './assets/styles/product.css'
 
 createApp(App)
   .use(router)

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
 import { products, categories, isOfertaActiva, productMatchesCategory, getProductImage, getCategoryPathText } from '@/data/products'
 import { addToCart } from '@/composables/useCart'
@@ -119,8 +119,10 @@ function resetFilters() {
         <div v-if="filteredProducts.length > 0" class="products-grid">
           <article v-for="product in filteredProducts" :key="product.idProducto" class="product-card">
             <div class="product-image-wrap">
-              <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="product-image" />
-              <div v-else class="product-image-placeholder">Sin imagen</div>
+              <RouterLink :to="`/producto/${product.idProducto}`" class="product-image-link">
+                <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="product-image" />
+                <div v-else class="product-image-placeholder">Sin imagen</div>
+              </RouterLink>
               <div class="product-badges">
                 <span v-if="isOfertaActiva(product)" class="product-badge product-badge-offer">-{{ product.Descuento }}%</span>
                 <span v-if="product.Stock === 0" class="product-badge product-badge-disabled">Agotado</span>
@@ -131,7 +133,9 @@ function resetFilters() {
             </div>
             <div class="product-info">
               <p class="product-category">{{ product.NombreCategoria }}</p>
-              <h2>{{ product.Nombre }}</h2>
+              <RouterLink :to="`/producto/${product.idProducto}`" class="product-title-link">
+                <h2>{{ product.Nombre }}</h2>
+              </RouterLink>
               <p class="product-saga">{{ product.NombreCategoriaPadre || 'Colección principal' }}</p>
               <div class="product-price-row">
                 <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>

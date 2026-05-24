@@ -10,7 +10,7 @@
   border-radius: 28px;
   background:
     radial-gradient(circle at top left, rgba(254, 221, 87, 0.28), transparent 34%),
-    linear-gradient(135deg, #ffffff 0%, #fff2bd 100%);
+    linear-gradient(135deg, var(--color-bg) 0%, #fff7df 100%);
   border: 2px solid var(--color-border);
   text-align: center;
 }
@@ -112,7 +112,15 @@
 .offer-image-wrap {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: linear-gradient(180deg, #ffffff 0%, #fff7df 100%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, #fff7df 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offer-image-link {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,6 +133,23 @@
   display: block;
 }
 
+.offer-image-placeholder {
+  width: 82%;
+  height: 82%;
+  min-height: 130px;
+  border-radius: 18px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 .offer-discount {
   position: absolute;
   top: 9px;
@@ -135,6 +160,7 @@
   color: var(--color-bg);
   font-size: 11px;
   font-weight: 900;
+  pointer-events: none;
 }
 
 .offer-info {
@@ -147,6 +173,18 @@
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.offer-title-link {
+  display: block;
+}
+
+.offer-title-link h2 {
+  transition: 0.2s ease;
+}
+
+.offer-title-link:hover h2 {
+  color: var(--color-accent);
 }
 
 .offer-info h2 {
@@ -269,21 +307,4 @@
   .offer-card {
     border-radius: 18px;
   }
-}
-
-.offer-image-placeholder {
-  width: 82%;
-  height: 82%;
-  min-height: 130px;
-  border-radius: 18px;
-  border: 2px dashed var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  text-align: center;
 }

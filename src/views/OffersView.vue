@@ -20,8 +20,10 @@ import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
       <div v-if="productosOfertas.length > 0" class="offers-grid">
         <article v-for="product in productosOfertas" :key="product.idProducto" class="offer-card">
           <div class="offer-image-wrap">
-            <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="offer-image" />
-            <div v-else class="offer-image-placeholder">Sin imagen</div>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="offer-image-link">
+              <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="offer-image" />
+              <div v-else class="offer-image-placeholder">Sin imagen</div>
+            </RouterLink>
             <span class="offer-discount">-{{ product.Descuento }}%</span>
             <button class="wishlist-button" type="button" @click="toggleWishlist(product)">
               <Heart :size="18" :stroke-width="2.4" :fill="isInWishlist(product.idProducto) ? '#f888b4' : 'none'" />
@@ -29,7 +31,9 @@ import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
           </div>
           <div class="offer-info">
             <p class="offer-category">{{ product.NombreCategoria }}</p>
-            <h2>{{ product.Nombre }}</h2>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="offer-title-link">
+              <h2>{{ product.Nombre }}</h2>
+            </RouterLink>
             <p class="offer-description">{{ product.Descripcion }}</p>
             <div class="offer-price-row">
               <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>

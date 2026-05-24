@@ -1,4 +1,5 @@
 <script setup>
+import { RouterLink } from 'vue-router'
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-vue-next'
 import { getCart, increaseQuantity, decreaseQuantity, removeProductFromCart, clearCart, cartBaseTotal, cartIvaTotal, cartTotal } from '@/composables/useCart'
 import { getProductImage } from '@/data/products'
@@ -15,12 +16,14 @@ const cart = getCart()
     <section v-if="cart.length > 0" class="cart-content">
       <div class="cart-list">
         <article v-for="product in cart" :key="product.idProducto" class="cart-item">
-          <div class="cart-item-image-wrap">
+          <RouterLink :to="`/producto/${product.idProducto}`" class="cart-item-image-wrap">
             <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="cart-item-image" />
             <div v-else class="cart-item-image-placeholder">Sin imagen</div>
-          </div>
+          </RouterLink>
           <div class="cart-item-info">
-            <h2>{{ product.Nombre }}</h2>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="cart-item-title-link">
+              <h2>{{ product.Nombre }}</h2>
+            </RouterLink>
             <p>Precio sin IVA: {{ product.PrecioSinIva.toFixed(2) }}€</p>
             <p>Precio con IVA: {{ product.PrecioConIva.toFixed(2) }}€</p>
             <div class="cart-item-controls">

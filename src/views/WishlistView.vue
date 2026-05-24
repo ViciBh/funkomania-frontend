@@ -1,4 +1,5 @@
 <script setup>
+import { RouterLink } from 'vue-router'
 import { Heart, ShoppingCart, Trash2 } from 'lucide-vue-next'
 import { getWishlist, removeFromWishlist } from '@/composables/useWishlist'
 import { addToCart } from '@/composables/useCart'
@@ -21,12 +22,16 @@ function removeItem(idProducto) {
       <div v-if="wishlist.length > 0" class="wishlist-grid">
         <article v-for="product in wishlist" :key="product.idProducto" class="wishlist-card">
           <div class="wishlist-image-wrap">
-            <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="wishlist-image" />
-            <div v-else class="wishlist-image-placeholder">Sin imagen</div>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="wishlist-image-link">
+              <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="wishlist-image" />
+              <div v-else class="wishlist-image-placeholder">Sin imagen</div>
+            </RouterLink>
           </div>
           <div class="wishlist-info">
             <p class="wishlist-category">{{ product.NombreCategoria }}</p>
-            <h2>{{ product.Nombre }}</h2>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="wishlist-title-link">
+              <h2>{{ product.Nombre }}</h2>
+            </RouterLink>
             <p class="wishlist-description">{{ product.Descripcion }}</p>
             <div class="wishlist-price-row">
               <strong>{{ product.PrecioFinal_ConIVA.toFixed(2) }}€</strong>

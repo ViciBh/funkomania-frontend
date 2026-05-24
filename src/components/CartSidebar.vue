@@ -23,12 +23,14 @@ const cart = getCart()
       </div>
       <div v-if="cart.length > 0" class="cart-sidebar-list">
         <article v-for="product in cart" :key="product.idProducto" class="cart-sidebar-item">
-          <div class="cart-sidebar-image-wrap">
+          <RouterLink :to="`/producto/${product.idProducto}`" class="cart-sidebar-image-wrap" @click="$emit('close')">
             <img v-if="getProductImage(product.Image)" :src="getProductImage(product.Image)" :alt="product.Nombre" class="cart-sidebar-image" />
             <div v-else class="cart-sidebar-image-placeholder">Sin imagen</div>
-          </div>
+          </RouterLink>
           <div class="cart-sidebar-info">
-            <h3>{{ product.Nombre }}</h3>
+            <RouterLink :to="`/producto/${product.idProducto}`" class="cart-sidebar-title-link" @click="$emit('close')">
+              <h3>{{ product.Nombre }}</h3>
+            </RouterLink>
             <p>{{ product.PrecioConIva.toFixed(2) }}€</p>
             <div class="cart-sidebar-controls">
               <button type="button" @click="decreaseQuantity(product.idProducto)">
