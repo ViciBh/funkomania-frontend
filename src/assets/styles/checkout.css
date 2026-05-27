@@ -510,3 +510,24 @@
     height: 140px;
   }
 }
+
+.checkout-shipping-note {
+  margin: 12px 0 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(79, 52, 117, 0.18), transparent 75%),
+    var(--color-bg-soft);
+  border: 2px solid rgba(79, 52, 117, 0.38);
+  border-left: 6px solid var(--color-primary-hover);
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.checkout-shipping-note strong {
+  color: var(--color-accent-second);
+  font-weight: 900;
+  text-transform: uppercase;
+}

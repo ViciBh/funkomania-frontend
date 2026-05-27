@@ -44,11 +44,6 @@ function handleRegister() {
         </label>
 
         <label class="login-field">
-          <span>Primer apellido</span>
-          <input v-model="apellido1" type="text" placeholder="Introduce tu primer apellido" />
-        </label>
-
-        <label class="login-field">
           <span>Contraseña</span>
           <input v-model="password" type="password" placeholder="Introduce tu contraseña" />
         </label>

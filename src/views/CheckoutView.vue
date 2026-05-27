@@ -295,7 +295,7 @@ function confirmOrder() {
         </div>
 
         <div class="checkout-totals-box">
-          <h2>Sumas e impuestos</h2>
+          <h2>Sumas y impuestos</h2>
 
           <div class="checkout-summary-row">
             <span>Base imponible</span>
@@ -307,15 +307,11 @@ function confirmOrder() {
             <strong>{{ cartIvaTotal.toFixed(2) }}€</strong>
           </div>
 
-          <div class="checkout-summary-row">
-            <span>Envío estándar</span>
-            <strong>0.00€</strong>
-          </div>
-
           <div class="checkout-summary-row checkout-summary-total">
             <span>Total</span>
             <strong>{{ cartTotal.toFixed(2) }}€</strong>
           </div>
+          <p class="checkout-shipping-note"><strong>Nota:</strong> el coste de envío no está incluido en el precio de los productos.</p>
         </div>
 
         <p v-if="paymentMessage" class="checkout-message">{{ paymentMessage }}</p>
