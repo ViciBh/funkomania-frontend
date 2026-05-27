@@ -22,7 +22,7 @@ const paymentMethods = getActivePaymentMethods()
 
 const personalForm = ref({
   Nombre: mockUser.Nombre,
-  Apellido1: mockUser.Apellido1,
+  Apellido1: mockUser.Apellido1 || '',
   Apellido2: mockUser.Apellido2 || '',
   email: mockUser.email,
   Telefono: mockUser.Telefono || ''
@@ -65,6 +65,7 @@ const canConfirmOrder = computed(() => {
     personalForm.value.Nombre &&
     personalForm.value.Apellido1 &&
     personalForm.value.email &&
+    personalForm.value.Telefono &&
     addressForm.value.Calle &&
     addressForm.value.Numero &&
     addressForm.value.Ciudad &&
@@ -235,6 +236,7 @@ function confirmOrder() {
           </div>
 
           <button class="checkout-save-address" type="button" @click="saveAddress">Guardar dirección</button>
+          <p v-if="addressMessage" class="checkout-message">{{ addressMessage }}</p>
           <div class="checkout-saved-addresses">
             <h2>Direcciones guardadas</h2>
 
@@ -306,12 +308,13 @@ function confirmOrder() {
             <span>IVA incluido</span>
             <strong>{{ cartIvaTotal.toFixed(2) }}€</strong>
           </div>
-
+          <p class="checkout-shipping-note">
+            <strong>Nota:</strong> el coste de envío no está incluido en el precio de los productos.
+          </p>
           <div class="checkout-summary-row checkout-summary-total">
             <span>Total</span>
             <strong>{{ cartTotal.toFixed(2) }}€</strong>
           </div>
-          <p class="checkout-shipping-note"><strong>Nota:</strong> el coste de envío no está incluido en el precio de los productos.</p>
         </div>
 
         <p v-if="paymentMessage" class="checkout-message">{{ paymentMessage }}</p>

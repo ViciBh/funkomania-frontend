@@ -13,6 +13,7 @@ import './assets/styles/wishlist.css'
 import './assets/styles/cartsidebar.css'
 import './assets/styles/product.css'
 import './assets/styles/checkout.css'
+import './assets/styles/admin.css'
 
 createApp(App)
   .use(router)

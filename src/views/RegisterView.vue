@@ -3,13 +3,12 @@ import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 const nombre = ref('')
-const apellido1 = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
 function handleRegister() {
-  if (!nombre.value || !apellido1.value || !email.value || !password.value || !confirmPassword.value) {
+  if (!nombre.value || !email.value || !password.value || !confirmPassword.value) {
     console.log('Completa los campos obligatorios')
     return
   }
@@ -21,7 +20,6 @@ function handleRegister() {
 
   console.log('Registro:', {
     Nombre: nombre.value,
-    Apellido1: apellido1.value,
     email: email.value,
     password: password.value
   })

@@ -1,12 +1,17 @@
 <script setup>
-import { ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
-import { ShoppingCart, User, Menu, X, Heart } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { ShoppingCart, User, Menu, X, Heart, ShieldCheck, Bell } from 'lucide-vue-next'
 import { cartCount } from '@/composables/useCart'
 import CartSidebar from '@/components/CartSidebar.vue'
 
+const route = useRoute()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
+
+const isAdminRoute = computed(() => {
+  return route.path.startsWith('/admin')
+})
 
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -18,7 +23,6 @@ function closeMobileMenu() {
 
 function openCart() {
   isCartOpen.value = true
-  closeMobileMenu()
 }
 
 function closeCart() {
@@ -28,40 +32,36 @@ function closeCart() {
 
 <template>
   <div class="page">
-    <header class="site-header">
+    <header v-if="!isAdminRoute" class="site-header">
       <div class="header-inner">
         <RouterLink to="/" class="logo" @click="closeMobileMenu">
-          <img src="./assets/Logo.svg" alt="Funkomania" class="logo-img" />
+          <img src="./assets/logo.svg" alt="Funkomanía" class="logo-img" />
         </RouterLink>
-
         <nav class="main-nav">
-          <RouterLink to="/" @click="closeMobileMenu">Inicio</RouterLink>
-          <RouterLink to="/catalogo" @click="closeMobileMenu">Catálogo</RouterLink>
-          <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
-          <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>
+          <RouterLink to="/">Inicio</RouterLink>
+          <RouterLink to="/catalogo">Catálogo</RouterLink>
+          <RouterLink to="/categorias">Categorías</RouterLink>
+          <RouterLink to="/ofertas">Ofertas</RouterLink>
         </nav>
-
         <div class="header-actions">
-          <RouterLink to="/login" class="login-link" @click="closeMobileMenu">
-            <User class="login-icon" :size="27" :stroke-width="2.4" />
-            <span class="login-text">Iniciar sesión</span>
-          </RouterLink>
-
-          <RouterLink to="/lista-deseos" class="wishlist-link" @click="closeMobileMenu">
-            <Heart class="wishlist-header-icon" :size="21" :stroke-width="2.4"/>
-          </RouterLink>
-
-          <button class="cart-link" type="button" @click="openCart">
-            <ShoppingCart class="cart-icon" :size="22" :stroke-width="2.4"/>
-            <!-- contador dinámico -->
-            <span v-if="cartCount > 0" class="cart-count">
-              {{ cartCount }}
-            </span>
+          <button class="wishlist-link" type="button">
+            <Bell :size="21" :stroke-width="2.3" />
           </button>
-
+          <RouterLink to="/login" class="login-link">
+            <User class="login-icon" :size="21" :stroke-width="2.3" />
+            <span class="login-text">Mi cuenta</span>
+          </RouterLink>
+          <RouterLink to="/lista-deseos" class="wishlist-link">
+            <Heart class="wishlist-header-icon" :size="21" :stroke-width="2.3" />
+          </RouterLink>
+          <button class="cart-link" type="button" @click="openCart">
+            <ShoppingCart class="cart-icon" :size="22" :stroke-width="2.3" />
+            <!-- contador dinámico -->
+            <span v-if="cartCount > 0" class="cart-count">{{ cartCount }}</span>
+          </button>
           <button class="burger-button" type="button" @click="toggleMobileMenu">
-            <X v-if="isMobileMenuOpen" :size="24" :stroke-width="2.5" />
-            <Menu v-else :size="24" :stroke-width="2.5" />
+            <X v-if="isMobileMenuOpen" :size="25" :stroke-width="2.4" />
+            <Menu v-else :size="25" :stroke-width="2.4" />
           </button>
         </div>
       </div>
@@ -71,10 +71,29 @@ function closeCart() {
         <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
         <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>
         <RouterLink to="/lista-deseos" @click="closeMobileMenu">Lista de deseos</RouterLink>
+        <RouterLink to="/login" @click="closeMobileMenu">Mi cuenta</RouterLink>
       </nav>
     </header>
+    <header v-else class="admin-site-header">
+      <div class="admin-header-inner">
+        <RouterLink to="/admin" class="admin-header-logo-link">
+          <img src="./assets/funkomania.png" alt="Funkomanía" class="admin-header-logo-img" />
+        </RouterLink>
+        <div class="admin-header-actions">
+          <button class="admin-notification-button" type="button">
+            <Bell :size="22" :stroke-width="2.4" />
+          </button>
+          <div class="admin-header-account">
+            <div>
+              <strong>Cuenta</strong>
+              <span>Administrador</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
     <RouterView />
-
+    <CartSidebar v-if="!isAdminRoute" :open="isCartOpen" @close="closeCart" />
     <footer class="site-footer">
       <div class="footer-inner">
         <p class="footer-brand">© 2026 Funkomanía</p>
@@ -85,6 +104,5 @@ function closeCart() {
         </nav>
       </div>
     </footer>
-    <CartSidebar :open="isCartOpen" @close="closeCart" />
   </div>
 </template>
