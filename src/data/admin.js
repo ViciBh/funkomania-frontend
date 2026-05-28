@@ -71,7 +71,7 @@ export const mockOrders = [
     MetodoPago: 'Tarjeta bancaria',
     TotalSinIVA: 47.05,
     TotalIVA: 9.89,
-    TotalConIVA: 56.94
+    TotalConIVA: 56.93
   },
   {
     idPedido: 2,
