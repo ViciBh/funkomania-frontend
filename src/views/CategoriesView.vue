@@ -1,4 +1,10 @@
-<script setup>
+/**
+ * Vista de categorías de Funkomanía.
+ * Muestra la estructura de categorías y subcategorías para facilitar la navegación por el catálogo.
+ *
+ * @author Viktoriia Bohoslavska
+ */
+ <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink } from 'vue-router'
 import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-vue-next'

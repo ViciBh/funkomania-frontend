@@ -1,3 +1,9 @@
+/**
+ * Estilos del panel de administración de Funkomanía.
+ * Define la interfaz de usuarios, productos, categorías, pedidos, modales y diseño responsive.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 .admin-site-header {
   background: var(--color-bg);
   border-bottom: 2px solid var(--color-border);

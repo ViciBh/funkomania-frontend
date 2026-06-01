@@ -1,3 +1,9 @@
+/**
+ * Estilos de la vista de detalle de producto de Funkomanía.
+ * Define imagen, información, precio, stock y acciones principales del producto.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 .product-detail-page {
   flex: 1;
   padding: 28px 36px 56px;

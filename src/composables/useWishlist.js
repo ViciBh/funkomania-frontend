@@ -1,3 +1,8 @@
+/**
+ * Permite añadir productos a lista de deseo
+ *
+ * @author Viktoriia Bohoslavska
+ */
 import { computed, ref } from 'vue'
 
 const wishlist = ref(JSON.parse(localStorage.getItem('wishlist')) || [])

@@ -1,3 +1,9 @@
+/**
+ * Vista de lista de deseos de Funkomanía.
+ * Permite consultar los productos favoritos del usuario y añadirlos al carrito.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { RouterLink } from 'vue-router'
 import { Heart, ShoppingCart, Trash2 } from 'lucide-vue-next'

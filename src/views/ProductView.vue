@@ -1,3 +1,9 @@
+/**
+ * Vista de detalle de producto de Funkomanía.
+ * Muestra la información completa de un producto seleccionado y sus acciones principales.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'

@@ -1,3 +1,9 @@
+/**
+ * Estilos de la vista de ofertas de Funkomanía.
+ * Define productos en descuento, badges, precios, botones y adaptación responsive.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 .offers-page {
   flex: 1;
   padding: 28px 36px 52px;

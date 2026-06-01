@@ -1,7 +1,14 @@
+/**
+ * Vista de ofertas de Funkomanía.
+ * Muestra los productos con descuentos activos y permite añadirlos al carrito o a la lista de deseos.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { RouterLink } from 'vue-router'
 import { ShoppingCart, Heart } from 'lucide-vue-next'
 import { productosOfertas, getProductImage } from '@/data/products'
+// Funcionalidad de añadir productos al carrito implementada por IVAN RODRIGUEZ LOREDO.
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 </script>

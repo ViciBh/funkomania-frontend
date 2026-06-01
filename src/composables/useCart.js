@@ -1,3 +1,10 @@
+/**
+ * Composable para la gestión temporal del carrito de compra de Funkomanía.
+ * Permite añadir productos, modificar cantidades, eliminar productos y calcular totales usando localStorage.
+ *
+ * @author IVAN RODRIGUEZ LOREDO
+ * @author Viktoriia Bohoslavska
+ */
 import { computed, ref } from 'vue'
 
 const cart = ref(JSON.parse(localStorage.getItem('cart')) || [])

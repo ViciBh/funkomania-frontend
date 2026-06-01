@@ -1,3 +1,9 @@
+/**
+ * Componente principal de Funkomanía.
+ * Define la estructura general de la aplicación, incluyendo navegación, cabecera, pie de página y vistas dinámicas.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'

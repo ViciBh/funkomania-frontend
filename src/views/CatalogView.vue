@@ -1,8 +1,16 @@
+/**
+ * Vista del catálogo de productos de Funkomanía.
+ * Permite visualizar productos, buscar, filtrar por categorías y acceder al detalle de cada producto.
+ *
+ * @author Viktoriia Bohoslavska
+ * @author IVAN RODRIGUEZ LOREDO
+ */
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { Search, ShoppingCart, Heart, SlidersHorizontal } from 'lucide-vue-next'
 import { products, categories, isOfertaActiva, productMatchesCategory, getProductImage, getCategoryPathText } from '@/data/products'
+// Funcionalidad de añadir productos al carrito implementada por IVAN RODRIGUEZ LOREDO.
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 
@@ -148,6 +156,7 @@ function resetFilters() {
                 <span class="product-stock">Stock: {{ product.Stock }}</span>
               </div>
               <!-- botón para añadir al carrito -->
+              <!-- Funcionalidad de añadir productos al carrito implementada por IVAN RODRIGUEZ LOREDO. -->
               <button class="add-cart-button" type="button" :disabled="product.Stock === 0" @click="addToCart(product)">
                 <ShoppingCart :size="17" :stroke-width="2.4" />
                 Añadir

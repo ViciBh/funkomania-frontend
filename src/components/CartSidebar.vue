@@ -1,3 +1,9 @@
+/**
+ * Componente lateral del carrito de compra de Funkomanía.
+ * Permite consultar rápidamente los productos añadidos al carrito sin abandonar la página actual.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { RouterLink } from 'vue-router'
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-vue-next'

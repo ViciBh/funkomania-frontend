@@ -1,3 +1,9 @@
+/**
+ * Vista del panel de administración de Funkomanía.
+ * Permite gestionar usuarios, productos, categorías y pedidos desde una interfaz de administración.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { computed, ref } from 'vue'
 import { AlertTriangle, BadgePercent, Boxes, ChevronLeft, ChevronRight, Edit, Eye, ImagePlus, LogOut, PackagePlus, PackageSearch, Plus, Save, Search, ShieldCheck, ShoppingBag, Trash2, UserRound, X } from 'lucide-vue-next'

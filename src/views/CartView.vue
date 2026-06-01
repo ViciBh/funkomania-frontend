@@ -1,3 +1,10 @@
+/**
+ * Vista del carrito de compra de Funkomanía.
+ * Permite revisar los productos añadidos, modificar cantidades, eliminar productos y consultar el total del pedido.
+ *
+ * @author Viktoriia Bohoslavska
+ * @author IVAN RODRIGUEZ LOREDO
+ */
 <script setup>
 import { RouterLink } from 'vue-router'
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-vue-next'

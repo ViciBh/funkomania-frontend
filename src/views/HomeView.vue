@@ -1,3 +1,9 @@
+/**
+ * Vista principal del proyecto Funkomanía.
+ * Muestra el acceso inicial a las secciones principales de la tienda: ofertas, catálogo y categorías.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { RouterLink } from 'vue-router'
 import { BadgePercent, ShoppingBag, Sparkles } from 'lucide-vue-next'

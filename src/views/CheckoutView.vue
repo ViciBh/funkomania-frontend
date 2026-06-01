@@ -1,3 +1,7 @@
+/**
+ *
+ * @author Viktoriia Bohoslavska
+ */
 <script setup>
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'

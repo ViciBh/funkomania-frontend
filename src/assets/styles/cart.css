@@ -1,3 +1,9 @@
+/**
+ * Estilos de la página del carrito de compra de Funkomanía.
+ * Define productos añadidos, controles de cantidad, resumen de importes y adaptación responsive.
+ *
+ * @author Viktoriia Bohoslavska
+ */
 .cart-page {
   flex: 1;
   padding: 28px 36px 52px;
