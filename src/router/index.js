@@ -11,6 +11,8 @@ import WishlistView from '../views/WishlistView.vue'
 import ProductView from '@/views/ProductView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
 import AdminView from '../views/AdminView.vue'
+import AccountDataView from '@/views/AccountDataView.vue'
+import AccountOrdersView from '@/views/AccountOrdersView.vue'
 
 const routes = [
   {
@@ -67,6 +69,14 @@ const routes = [
     path: '/admin',
     name: 'admin',
     component: AdminView
+  },
+  {
+    path: '/cuenta-datos',
+    component: AccountDataView
+  },
+  {
+    path: '/cuenta-pedidos',
+    component: AccountOrdersView
   }
 ]
 

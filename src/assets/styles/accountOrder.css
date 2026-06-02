@@ -1,0 +1,40 @@
+.date-group {
+  margin-bottom: 2rem;
+  margin: 0 2rem 2rem 2rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.date-title {
+  margin: 0;
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 1.1rem;
+}
+
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.product-row:not(:last-child) {
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.orders-header {
+  margin: 0 2rem 2rem 2rem;
+}
+
+.product-image {
+  max-width: 70px;
+  max-height: 70px;
+
+  object-fit: cover;
+  flex: 0 0 20px;
+}
