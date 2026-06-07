@@ -14,6 +14,18 @@ export default defineConfig({
       '/auth': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/productos': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/categorias': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/usuario': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

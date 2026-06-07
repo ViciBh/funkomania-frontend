@@ -5,23 +5,66 @@
  * @author Viktoriia Bohoslavska
  */
 <script setup>
-import { computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ArrowLeft, Heart, ShoppingCart } from 'lucide-vue-next'
-import { products, getProductImage, isOfertaActiva } from '@/data/products'
+import { getProductById } from '@/services/productService'
 import { addToCart } from '@/composables/useCart'
 import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
 
 const route = useRoute()
+const product = ref(null)
+const loading = ref(false)
+const errorMessage = ref('')
+/**
+ * Carga el detalle de un producto desde la API backend.
+ */
+async function loadProduct() {
+  loading.value = true
+  errorMessage.value = ''
+  product.value = null
+  try {
+    product.value = await getProductById(route.params.id)
+  } catch (error) {
+    errorMessage.value = 'No se pudo cargar el producto'
+    console.error('Error cargando producto:', error)
+  } finally {
+    loading.value = false
+  }
+}
+/**
+ * Comprueba si una oferta está activa según los datos recibidos del backend.
+ */
+function isOfertaActiva(product) {
+  return product.EnOferta === 1 &&
+    product.Descuento > 0 &&
+    (!product.FechaFinOferta || new Date(product.FechaFinOferta) >= new Date())
+}
+/**
+ * Devuelve la imagen del producto si existe.
+ */
+function getProductImage(image) {
+  return image || null
+}
 
-const product = computed(() => {
-  return products.find((product) => product.idProducto === Number(route.params.id))
+onMounted(() => {
+  loadProduct()
 })
+
+watch(
+  () => route.params.id,
+  () => {
+    loadProduct()
+  }
+)
 </script>
 
 <template>
   <main class="product-detail-page">
-    <section v-if="product" class="product-detail-container">
+    <section v-if="loading" class="product-detail-empty">
+      <h1>Cargando producto...</h1>
+    </section>
+    <section v-else-if="product" class="product-detail-container">
       <RouterLink to="/catalogo" class="product-back-link">
         <ArrowLeft :size="18" :stroke-width="2.5" />
         Volver al catálogo
@@ -67,7 +110,7 @@ const product = computed(() => {
       </section>
     </section>
     <section v-else class="product-detail-empty">
-      <h1>Producto no encontrado</h1>
+      <h1>{{ errorMessage || 'Producto no encontrado' }}</h1>
       <p>El artículo seleccionado no existe o ya no está disponible.</p>
       <RouterLink to="/catalogo" class="product-buy-button">Volver al catálogo</RouterLink>
     </section>

@@ -307,3 +307,93 @@
     border-radius: 18px;
   }
 }
+
+/* OFFERS PAGE SIZE */
+
+.offers-page-size {
+  width: 100%;
+  margin: 0 0 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.offers-page-size label {
+  display: grid;
+  gap: 6px;
+}
+
+.offers-page-size span {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.offers-page-size select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg-soft);
+  color: var(--color-text-main);
+  font-size: 13px;
+  outline: none;
+}
+
+/* OFFERS PAGINATION */
+
+.offers-pagination {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.offers-pagination button {
+  min-width: 110px;
+  min-height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.offers-pagination button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.offers-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.offers-pagination span {
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@media (max-width: 620px) {
+  .offers-page-size {
+    justify-content: stretch;
+  }
+
+  .offers-page-size label {
+    width: 100%;
+  }
+
+  .offers-pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .offers-pagination button {
+    width: 100%;
+  }
+}

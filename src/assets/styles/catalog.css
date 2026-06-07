@@ -513,3 +513,54 @@
     border-radius: 18px;
   }
 }
+
+/* PAGINATION */
+
+.catalog-pagination {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.catalog-pagination button {
+  min-width: 110px;
+  min-height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.catalog-pagination button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.catalog-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.catalog-pagination span {
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@media (max-width: 620px) {
+  .catalog-pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .catalog-pagination button {
+    width: 100%;
+  }
+}

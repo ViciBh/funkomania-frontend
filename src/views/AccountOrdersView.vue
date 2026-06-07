@@ -67,7 +67,7 @@ const orders = [
         <img
             :src="product.imagen"
             :alt="product.nombre"
-            class="product-image"
+            class="product-image1"
         />
 
         <div class="product-name">
