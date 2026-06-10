@@ -6,14 +6,17 @@
  */
 <script setup>
 import { computed, ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { ShoppingCart, User, Menu, X, Heart, ShieldCheck, Bell } from 'lucide-vue-next'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { ShoppingCart, User, Menu, X, Heart, Bell, LogOut } from 'lucide-vue-next'
 import { cartCount } from '@/composables/useCart'
+import { useAuth } from '@/composables/useAuth'
 import CartSidebar from '@/components/CartSidebar.vue'
 
 const route = useRoute()
+const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
+const { authUser, isAuthenticated, clearAuthUser } = useAuth()
 
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
@@ -34,6 +37,12 @@ function openCart() {
 function closeCart() {
   isCartOpen.value = false
 }
+
+function handleLogout() {
+  clearAuthUser()
+  closeMobileMenu()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -53,7 +62,18 @@ function closeCart() {
           <button class="wishlist-link" type="button">
             <Bell :size="21" :stroke-width="2.3" />
           </button>
-          <RouterLink to="/login" class="login-link">
+          <div v-if="isAuthenticated" class="header-user-box">
+            <User class="login-icon" :size="21" :stroke-width="2.3" />
+            <span class="header-user-data">
+              <strong>{{ authUser.name || 'Usuario' }}</strong>
+              <small>{{ authUser.username }}</small>
+            </span>
+            <button class="logout-link" type="button" @click="handleLogout">
+              <LogOut :size="18" :stroke-width="2.3" />
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+          <RouterLink v-else to="/login" class="login-link">
             <User class="login-icon" :size="21" :stroke-width="2.3" />
             <span class="login-text">Mi cuenta</span>
           </RouterLink>
@@ -77,7 +97,12 @@ function closeCart() {
         <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
         <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>
         <RouterLink to="/lista-deseos" @click="closeMobileMenu">Lista de deseos</RouterLink>
-        <RouterLink to="/login" @click="closeMobileMenu">Mi cuenta</RouterLink>
+        <div v-if="isAuthenticated" class="mobile-user-box">
+          <strong>{{ authUser.name || 'Usuario' }}</strong>
+          <small>{{ authUser.username }}</small>
+          <button type="button" @click="handleLogout">Cerrar sesión</button>
+        </div>
+        <RouterLink v-else to="/login" @click="closeMobileMenu">Mi cuenta</RouterLink>
       </nav>
     </header>
     <header v-else class="admin-site-header">

@@ -1,5 +1,4 @@
 /**
- * Vista de inicio de sesión de Funkomanía.
  * Permite al usuario introducir sus datos de acceso y autenticarse mediante la API backend.
  *
  * @author Viktoriia Bohoslavska
@@ -8,11 +7,14 @@
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { loginUser } from '@/services/authService'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+const { refreshAuthUser } = useAuth()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
+const loading = ref(false)
 /**
  * Gestiona el envío del formulario de inicio de sesión.
  * Valida que los campos obligatorios estén completos y envía los datos al backend.
@@ -23,6 +25,7 @@ async function handleLogin() {
     errorMessage.value = 'Introduce tu email y contraseña'
     return
   }
+  loading.value = true
   try {
     /**
      * Petición al backend.
@@ -34,14 +37,17 @@ async function handleLogin() {
       password: password.value
     })
     /**
-     * Si el login es correcto, el token se guarda desde authService.js.
-     * Después se redirige al usuario a la página principal.
+     * Si el login es correcto, authService.js guarda el token en localStorage.
+     * Después actualizamos el estado reactivo para que App.vue cambie el header.
      */
+    refreshAuthUser()
     console.log('Login correcto:', user)
     router.push('/')
   } catch (error) {
     errorMessage.value = 'Email o contraseña incorrectos'
     console.error('Error login:', error)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -61,7 +67,9 @@ async function handleLogin() {
         </label>
         <a href="#" class="forgot-link">¿Has olvidado tu contraseña?</a>
         <p v-if="errorMessage" class="login-error">{{ errorMessage }}</p>
-        <button class="login-button" type="submit">Iniciar sesión</button>
+        <button class="login-button" type="submit" :disabled="loading">
+          {{ loading ? 'Entrando...' : 'Iniciar sesión' }}
+        </button>
         <RouterLink to="/registro" class="register-button">Crear cuenta</RouterLink>
       </form>
     </section>
