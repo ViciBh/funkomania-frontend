@@ -26,6 +26,10 @@ export default defineConfig({
       '/usuario': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/metodos-pago': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

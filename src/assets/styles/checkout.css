@@ -537,3 +537,20 @@
   font-weight: 900;
   text-transform: uppercase;
 }
+
+.checkout-card-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.checkout-input-error {
+  border-color: #e5484d !important;
+  background: #fff5f5;
+}
+
+.checkout-field-error {
+  color: #c92a2a;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
