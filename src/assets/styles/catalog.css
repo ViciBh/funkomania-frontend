@@ -128,6 +128,22 @@
   border-radius: 14px;
   background: var(--color-bg-soft);
   border: 2px solid var(--color-border);
+  max-height: 390px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.filter-categories::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filter-categories::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+}
+
+.filter-categories::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .filter-categories h3 {
