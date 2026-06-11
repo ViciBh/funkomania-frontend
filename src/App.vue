@@ -5,17 +5,19 @@
  * @author Viktoriia Bohoslavska
  */
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { ShoppingCart, User, Menu, X, Heart, Bell, LogOut } from 'lucide-vue-next'
 import { cartCount } from '@/composables/useCart'
 import { useAuth } from '@/composables/useAuth'
+import { notifications, notificationsLoading, notificationsError, unreadNotificationsCount, isNotificationUnread, loadNotifications, readNotification, clearNotifications } from '@/composables/useNotifications'
 import CartSidebar from '@/components/CartSidebar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
+const isNotificationsOpen = ref(false)
 const { authUser, isAuthenticated, clearAuthUser, getLoginRedirect } = useAuth()
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
@@ -41,12 +43,35 @@ function closeCart() {
   isCartOpen.value = false
 }
 
+function toggleNotifications() {
+  isNotificationsOpen.value = !isNotificationsOpen.value
+  if (isNotificationsOpen.value) {
+    loadNotifications()
+  }
+}
+
+function closeNotifications() {
+  isNotificationsOpen.value = false
+}
+
+async function handleReadNotification(idNotificacion) {
+  await readNotification(idNotificacion)
+}
+
 function handleLogout() {
   clearAuthUser()
+  clearNotifications()
   closeMobileMenu()
   closeCart()
+  closeNotifications()
   router.push('/')
 }
+
+onMounted(() => {
+  if (isAuthenticated.value) {
+    loadNotifications()
+  }
+})
 </script>
 
 <template>
@@ -63,9 +88,28 @@ function handleLogout() {
           <RouterLink to="/ofertas">Ofertas</RouterLink>
         </nav>
         <div class="header-actions">
-          <button v-if="isAuthenticated" class="wishlist-link" type="button" title="Notificaciones">
-            <Bell :size="21" :stroke-width="2.3" />
-          </button>
+          <div v-if="isAuthenticated" class="notification-wrap">
+            <button class="wishlist-link notification-button" type="button" title="Notificaciones" @click="toggleNotifications">
+              <Bell :size="21" :stroke-width="2.3" />
+              <span v-if="unreadNotificationsCount > 0" class="notification-count">{{ unreadNotificationsCount }}</span>
+            </button>
+            <div v-if="isNotificationsOpen" class="notification-dropdown">
+              <div class="notification-dropdown-header">
+                <h2>Notificaciones</h2>
+                <button type="button" @click="closeNotifications">Cerrar</button>
+              </div>
+              <p v-if="notificationsLoading" class="notification-empty">Cargando notificaciones...</p>
+              <p v-else-if="notificationsError" class="notification-empty">{{ notificationsError }}</p>
+              <div v-else-if="notifications.length > 0" class="notification-list">
+                <button v-for="notification in notifications" :key="notification.idNotificacion" class="notification-item" :class="{ 'notification-item-unread': isNotificationUnread(notification) }" type="button" @click="handleReadNotification(notification.idNotificacion)">
+                  <span class="notification-type">{{ notification.tipoNotificacion }}</span>
+                  <strong>{{ notification.mensaje }}</strong>
+                  <small>{{ isNotificationUnread(notification) ? 'Pendiente' : 'Leída' }}</small>
+                </button>
+              </div>
+              <p v-else class="notification-empty">No tienes notificaciones.</p>
+            </div>
+          </div>
           <div v-if="isAuthenticated" class="header-user-box">
             <User class="login-icon" :size="21" :stroke-width="2.3" />
             <span class="header-user-data">

@@ -534,3 +534,123 @@ button {
     display: none;
   }
 }
+
+.notification-wrap {
+  position: relative;
+}
+
+.notification-button {
+  position: relative;
+}
+
+.notification-count {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 0.7rem);
+  right: 0;
+  width: 320px;
+  max-height: 380px;
+  overflow-y: auto;
+  border-radius: 1.2rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  z-index: 50;
+  padding: 0.85rem;
+}
+
+.notification-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.notification-dropdown-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.notification-dropdown-header button {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.notification-item {
+  border: 1px solid var(--color-border);
+  background: var(--color-soft);
+  color: var(--color-text);
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.notification-item:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.notification-item-unread {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.notification-type {
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.notification-item strong {
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.notification-item small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.notification-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .notification-wrap {
+    display: none;
+  }
+}
