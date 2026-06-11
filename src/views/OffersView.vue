@@ -11,7 +11,7 @@ import { ShoppingCart, Heart } from 'lucide-vue-next'
 import { getOfferProducts } from '@/services/productService'
 // Funcionalidad de añadir productos al carrito implementada por IVAN RODRIGUEZ LOREDO.
 import { addToCart } from '@/composables/useCart'
-import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
+import { toggleWishlist, isInWishlist, loadWishlist } from '@/composables/useWishlist'
 
 const offerProducts = ref([])
 const loading = ref(false)
@@ -95,6 +95,7 @@ function changePageSize() {
 
 onMounted(() => {
   loadOfferProducts()
+  loadWishlist()
 })
 </script>
 

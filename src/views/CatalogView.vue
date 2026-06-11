@@ -13,7 +13,7 @@ import { getProductsList } from '@/services/productService'
 import { getCategories } from '@/services/categoryService'
 // Funcionalidad de añadir productos al carrito implementada por IVAN RODRIGUEZ LOREDO.
 import { addToCart } from '@/composables/useCart'
-import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
+import { toggleWishlist, isInWishlist, loadWishlist } from '@/composables/useWishlist'
 
 const search = ref('')
 const selectedSort = ref('default')
@@ -213,6 +213,7 @@ function changePageSize() {
 
 onMounted(() => {
   loadCatalogData()
+  loadWishlist()
 })
 </script>
 

@@ -10,7 +10,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { ArrowLeft, Heart, ShoppingCart } from 'lucide-vue-next'
 import { getProductById } from '@/services/productService'
 import { addToCart } from '@/composables/useCart'
-import { toggleWishlist, isInWishlist } from '@/composables/useWishlist'
+import { toggleWishlist, isInWishlist, loadWishlist } from '@/composables/useWishlist'
 
 const route = useRoute()
 const product = ref(null)
@@ -49,6 +49,7 @@ function getProductImage(image) {
 
 onMounted(() => {
   loadProduct()
+  loadWishlist()
 })
 
 watch(

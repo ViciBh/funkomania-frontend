@@ -52,7 +52,8 @@ const routes = [
   {
     path: '/lista-deseos',
     name: 'wishlist',
-    component: WishlistView
+    component: WishlistView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/producto/:id',

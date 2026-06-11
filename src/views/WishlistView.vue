@@ -5,17 +5,22 @@
  * @author Viktoriia Bohoslavska
  */
 <script setup>
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Heart, ShoppingCart, Trash2 } from 'lucide-vue-next'
-import { getWishlist, removeFromWishlist } from '@/composables/useWishlist'
+import { getWishlist, removeFromWishlist, loadWishlist, wishlistLoading, wishlistError } from '@/composables/useWishlist'
 import { addToCart } from '@/composables/useCart'
 import { getProductImage, isOfertaActiva } from '@/data/products'
 
 const wishlist = getWishlist()
 
-function removeItem(idProducto) {
-  removeFromWishlist(idProducto)
+async function removeItem(idProducto) {
+  await removeFromWishlist(idProducto)
 }
+
+onMounted(() => {
+  loadWishlist()
+})
 </script>
 
 <template>
@@ -25,7 +30,17 @@ function removeItem(idProducto) {
       <p>Tus productos favoritos</p>
     </section>
     <section class="wishlist-content">
-      <div v-if="wishlist.length > 0" class="wishlist-grid">
+      <div v-if="wishlistLoading" class="wishlist-empty">
+        <Heart :size="46" :stroke-width="2.2" />
+        <h2>Cargando lista de deseos...</h2>
+        <p>Estamos recuperando tus productos favoritos.</p>
+      </div>
+      <div v-else-if="wishlistError" class="wishlist-empty">
+        <Heart :size="46" :stroke-width="2.2" />
+        <h2>No se pudo cargar la lista de deseos</h2>
+        <p>{{ wishlistError }}</p>
+      </div>
+      <div v-else-if="wishlist.length > 0" class="wishlist-grid">
         <article v-for="product in wishlist" :key="product.idProducto" class="wishlist-card">
           <div class="wishlist-image-wrap">
             <RouterLink :to="`/producto/${product.idProducto}`" class="wishlist-image-link">
@@ -62,3 +77,5 @@ function removeItem(idProducto) {
     </section>
   </main>
 </template>
+
+<style scoped></style>
