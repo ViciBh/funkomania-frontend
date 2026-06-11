@@ -16,10 +16,13 @@ const route = useRoute()
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
-const { authUser, isAuthenticated, clearAuthUser } = useAuth()
-
+const { authUser, isAuthenticated, clearAuthUser, getLoginRedirect } = useAuth()
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
+})
+
+const wishlistRoute = computed(() => {
+  return isAuthenticated.value ? '/lista-deseos' : getLoginRedirect('/lista-deseos')
 })
 
 function toggleMobileMenu() {
@@ -41,6 +44,7 @@ function closeCart() {
 function handleLogout() {
   clearAuthUser()
   closeMobileMenu()
+  closeCart()
   router.push('/')
 }
 </script>
@@ -59,7 +63,7 @@ function handleLogout() {
           <RouterLink to="/ofertas">Ofertas</RouterLink>
         </nav>
         <div class="header-actions">
-          <button class="wishlist-link" type="button">
+          <button v-if="isAuthenticated" class="wishlist-link" type="button" title="Notificaciones">
             <Bell :size="21" :stroke-width="2.3" />
           </button>
           <div v-if="isAuthenticated" class="header-user-box">
@@ -77,7 +81,7 @@ function handleLogout() {
             <User class="login-icon" :size="21" :stroke-width="2.3" />
             <span class="login-text">Mi cuenta</span>
           </RouterLink>
-          <RouterLink to="/lista-deseos" class="wishlist-link">
+          <RouterLink :to="wishlistRoute" class="wishlist-link">
             <Heart class="wishlist-header-icon" :size="21" :stroke-width="2.3" />
           </RouterLink>
           <button class="cart-link" type="button" @click="openCart">
@@ -96,7 +100,7 @@ function handleLogout() {
         <RouterLink to="/catalogo" @click="closeMobileMenu">Catálogo</RouterLink>
         <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
         <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>
-        <RouterLink to="/lista-deseos" @click="closeMobileMenu">Lista de deseos</RouterLink>
+        <RouterLink :to="wishlistRoute" @click="closeMobileMenu">Lista de deseos</RouterLink>
         <div v-if="isAuthenticated" class="mobile-user-box">
           <strong>{{ authUser.name || 'Usuario' }}</strong>
           <small>{{ authUser.username }}</small>

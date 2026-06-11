@@ -9,6 +9,13 @@ import { RouterLink } from 'vue-router'
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-vue-next'
 import { getCart, increaseQuantity, decreaseQuantity, removeProductFromCart, cartTotal } from '@/composables/useCart'
 import { getProductImage } from '@/data/products'
+import { computed } from 'vue'
+import { useAuth } from '@/composables/useAuth'
+
+const { isAuthenticated, getLoginRedirect } = useAuth()
+const checkoutRoute = computed(() => {
+  return isAuthenticated.value ? '/checkout' : getLoginRedirect('/checkout')
+})
 
 defineProps({
   open: Boolean
@@ -63,7 +70,7 @@ const cart = getCart()
           <span>Total</span>
           <strong>{{ cartTotal.toFixed(2) }}€</strong>
         </div>
-        <RouterLink to="/carrito" class="cart-sidebar-buy" @click="$emit('close')">Comprar</RouterLink>
+        <RouterLink :to="checkoutRoute" class="cart-sidebar-buy" @click="$emit('close')">Comprar</RouterLink>
       </div>
     </aside>
   </div>

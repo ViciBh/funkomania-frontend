@@ -10,7 +10,13 @@ import { RouterLink } from 'vue-router'
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-vue-next'
 import { getCart, increaseQuantity, decreaseQuantity, removeProductFromCart, clearCart, cartBaseTotal, cartIvaTotal, cartTotal } from '@/composables/useCart'
 import { getProductImage } from '@/data/products'
+import { computed } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
+const { isAuthenticated, getLoginRedirect } = useAuth()
+const checkoutRoute = computed(() => {
+  return isAuthenticated.value ? '/checkout' : getLoginRedirect('/checkout')
+})
 const cart = getCart()
 </script>
 
@@ -66,7 +72,7 @@ const cart = getCart()
           <span>Total con IVA</span>
           <strong>{{ cartTotal.toFixed(2) }}€</strong>
         </div>
-        <RouterLink to="/checkout" class="cart-checkout-button">Finalizar compra</RouterLink>
+        <RouterLink :to="checkoutRoute" class="cart-checkout-button">Finalizar compra</RouterLink>
         <button class="cart-clear-button" type="button" @click="clearCart">Vaciar carrito</button>
       </aside>
     </section>

@@ -9,7 +9,6 @@ import CartView from '../views/CartView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import WishlistView from '../views/WishlistView.vue'
 import ProductView from '@/views/ProductView.vue'
-import CheckoutView from '../views/CheckoutView.vue'
 import AdminView from '../views/AdminView.vue'
 import AccountDataView from '@/views/AccountDataView.vue'
 import AccountOrdersView from '@/views/AccountOrdersView.vue'
@@ -63,7 +62,8 @@ const routes = [
   {
     path: '/checkout',
     name: 'checkout',
-    component: CheckoutView
+    component: () => import('@/views/CheckoutView.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/admin',
@@ -72,17 +72,28 @@ const routes = [
   },
   {
     path: '/cuenta-datos',
-    component: AccountDataView
+    component: AccountDataView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/cuenta-pedidos',
-    component: AccountOrdersView
+    component: AccountOrdersView,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !localStorage.getItem('token')) {
+    return {
+      path: '/login',
+      query: { redirect: to.fullPath }
+    }
+  }
 })
 
 export default router

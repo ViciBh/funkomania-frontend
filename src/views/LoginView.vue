@@ -1,16 +1,18 @@
 /**
+ * Vista de inicio de sesión de Funkomanía.
  * Permite al usuario introducir sus datos de acceso y autenticarse mediante la API backend.
  *
  * @author Viktoriia Bohoslavska
  */
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { loginUser } from '@/services/authService'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const { refreshAuthUser } = useAuth()
+const route = useRoute()
+const { setAuthUser } = useAuth()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -37,12 +39,11 @@ async function handleLogin() {
       password: password.value
     })
     /**
-     * Si el login es correcto, authService.js guarda el token en localStorage.
-     * Después actualizamos el estado reactivo para que App.vue cambie el header.
+     * Si el login es correcto, se guarda el estado de autenticación y se redirige al usuario a la página solicitada o a inicio.
      */
-    refreshAuthUser()
+    setAuthUser(user)
     console.log('Login correcto:', user)
-    router.push('/')
+    router.push(route.query.redirect || '/')
   } catch (error) {
     errorMessage.value = 'Email o contraseña incorrectos'
     console.error('Error login:', error)

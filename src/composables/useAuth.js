@@ -5,7 +5,7 @@
  * @author Viktoriia Bohoslavska
  */
 import { computed, ref } from 'vue'
-import { logoutUser } from '@/services/authService'
+import { setToken, removeToken } from '@/services/api'
 
 const authUser = ref({
   token: localStorage.getItem('token') || '',
@@ -17,6 +17,17 @@ const isAuthenticated = computed(() => {
   return !!authUser.value.token
 })
 
+function setAuthUser(data) {
+  setToken(data.token)
+  localStorage.setItem('username', data.username)
+  localStorage.setItem('name', data.name)
+  authUser.value = {
+    token: data.token,
+    username: data.username,
+    name: data.name
+  }
+}
+
 function refreshAuthUser() {
   authUser.value = {
     token: localStorage.getItem('token') || '',
@@ -26,15 +37,30 @@ function refreshAuthUser() {
 }
 
 function clearAuthUser() {
-  logoutUser()
-  refreshAuthUser()
+  removeToken()
+  localStorage.removeItem('username')
+  localStorage.removeItem('name')
+  authUser.value = {
+    token: '',
+    username: '',
+    name: ''
+  }
+}
+
+function getLoginRedirect(path) {
+  return {
+    path: '/login',
+    query: { redirect: path }
+  }
 }
 
 export function useAuth() {
   return {
     authUser,
     isAuthenticated,
+    setAuthUser,
     refreshAuthUser,
-    clearAuthUser
+    clearAuthUser,
+    getLoginRedirect
   }
 }
