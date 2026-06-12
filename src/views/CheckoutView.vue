@@ -1,4 +1,6 @@
 /**
+ * Vista de checkout de Funkomanía.
+ * Gestiona los datos personales, dirección de envío, métodos de pago y confirmación simulada del pedido.
  *
  * @author Viktoriia Bohoslavska
  */
@@ -7,33 +9,36 @@ import { computed, ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CheckCircle, CreditCard, MapPin, ShoppingCart, User } from 'lucide-vue-next'
 import { getCart, cartBaseTotal, cartIvaTotal, cartTotal, clearCart } from '@/composables/useCart'
+import { useAuth } from '@/composables/useAuth'
 import { getProductImage } from '@/data/products'
 import { getPaymentMethods } from '@/services/paymentService'
-import { mockUser, getUserAddresses, getActiveAddress, formatAddress } from '@/data/checkout'
+import { createUserAddress, getUserAddresses, formatAddress } from '@/services/addressService'
 
 const cart = getCart()
-const userAddresses = getUserAddresses()
-const activeAddress = getActiveAddress()
+const { authUser } = useAuth()
 const paymentMethods = ref([])
 const paymentMethodsLoading = ref(false)
 const paymentMethodsError = ref('')
+const addressSaving = ref(false)
+const savedAddress = ref(null)
+const savedAddressSnapshot = ref(null)
 const personalForm = ref({
-  Nombre: mockUser.Nombre,
-  Apellido1: mockUser.Apellido1 || '',
-  Apellido2: mockUser.Apellido2 || '',
-  email: mockUser.email,
-  Telefono: mockUser.Telefono || ''
+  Nombre: authUser.value.name || '',
+  Apellido1: '',
+  Apellido2: '',
+  email: authUser.value.username || '',
+  Telefono: ''
 })
 const addressForm = ref({
-  idDireccion: activeAddress?.idDireccion || null,
-  Calle: activeAddress?.Calle || '',
-  Numero: activeAddress?.Numero || '',
-  Piso: activeAddress?.Piso || '',
-  Puerta: activeAddress?.Puerta || '',
-  Ciudad: activeAddress?.Ciudad || '',
-  Municipio: activeAddress?.Municipio || '',
-  Provincia: activeAddress?.Provincia || '',
-  CP: activeAddress?.CP || ''
+  idDireccion: null,
+  Calle: '',
+  Numero: '',
+  Piso: '',
+  Puerta: '',
+  Ciudad: '',
+  Municipio: '',
+  Provincia: '',
+  CP: ''
 })
 const cardForm = ref({
   Titular: '',
@@ -51,9 +56,7 @@ const selectedPaymentMethodId = ref(null)
 const orderConfirmed = ref(false)
 const paymentMessage = ref('')
 const addressMessage = ref('')
-const visibleAddresses = computed(() => {
-  return userAddresses.slice(0, 2)
-})
+
 const selectedPaymentMethod = computed(() => {
   return paymentMethods.value.find((method) => method.idMetodoPago === selectedPaymentMethodId.value) || null
 })
@@ -64,6 +67,37 @@ function normalizePhone(phone) {
 
 function normalizeCardNumber(number) {
   return number.replace(/\s/g, '')
+}
+
+function normalizeAddressValue(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getComparableAddress(address) {
+  return {
+    Calle: normalizeAddressValue(address?.Calle),
+    Numero: normalizeAddressValue(address?.Numero),
+    Piso: normalizeAddressValue(address?.Piso),
+    Puerta: normalizeAddressValue(address?.Puerta),
+    Ciudad: normalizeAddressValue(address?.Ciudad),
+    Municipio: normalizeAddressValue(address?.Municipio),
+    Provincia: normalizeAddressValue(address?.Provincia),
+    CP: normalizeAddressValue(address?.CP)
+  }
+}
+
+function isSameAddressData(addressA, addressB) {
+  const firstAddress = getComparableAddress(addressA)
+  const secondAddress = getComparableAddress(addressB)
+
+  return firstAddress.Calle === secondAddress.Calle &&
+    firstAddress.Numero === secondAddress.Numero &&
+    firstAddress.Piso === secondAddress.Piso &&
+    firstAddress.Puerta === secondAddress.Puerta &&
+    firstAddress.Ciudad === secondAddress.Ciudad &&
+    firstAddress.Municipio === secondAddress.Municipio &&
+    firstAddress.Provincia === secondAddress.Provincia &&
+    firstAddress.CP === secondAddress.CP
 }
 
 function isNameValid(value) {
@@ -119,6 +153,13 @@ const isCiudadValid = computed(() => isCityTextValid(addressForm.value.Ciudad))
 const isMunicipioValid = computed(() => !addressForm.value.Municipio || isCityTextValid(addressForm.value.Municipio))
 const isProvinciaValid = computed(() => isCityTextValid(addressForm.value.Provincia))
 const isCpValid = computed(() => isPostalCodeValid(addressForm.value.CP))
+const isAddressFormChanged = computed(() => {
+  if (!savedAddressSnapshot.value) return true
+  return !isSameAddressData(addressForm.value, savedAddressSnapshot.value)
+})
+const isAddressSaved = computed(() => {
+  return !!savedAddress.value?.idDireccion && !isAddressFormChanged.value
+})
 const isCardTitularValid = computed(() => isNameValid(cardForm.value.Titular))
 const isCardNumberValid = computed(() => /^\d{16}$/.test(normalizeCardNumber(cardForm.value.NumeroTarjeta)))
 const isCardExpiryValid = computed(() => isExpiryDateValid(cardForm.value.FechaCaducidad))
@@ -159,6 +200,7 @@ const canConfirmOrder = computed(() => {
   return cart.value.length > 0 &&
     isPersonalFormValid.value &&
     isAddressFormValid.value &&
+    isAddressSaved.value &&
     selectedPaymentMethodId.value &&
     isPaymentFormValid.value
 })
@@ -167,9 +209,24 @@ function showError(value, isValid) {
   return value && !isValid
 }
 
+function fillAddressForm(address) {
+  addressForm.value = {
+    idDireccion: address?.idDireccion || null,
+    Calle: address?.Calle || '',
+    Numero: address?.Numero || '',
+    Piso: address?.Piso || '',
+    Puerta: address?.Puerta || '',
+    Ciudad: address?.Ciudad || '',
+    Municipio: address?.Municipio || '',
+    Provincia: address?.Provincia || '',
+    CP: address?.CP || ''
+  }
+}
+
 async function loadPaymentMethods() {
   paymentMethodsLoading.value = true
   paymentMethodsError.value = ''
+
   try {
     paymentMethods.value = await getPaymentMethods()
     selectedPaymentMethodId.value = paymentMethods.value[0]?.idMetodoPago || null
@@ -181,43 +238,61 @@ async function loadPaymentMethods() {
   }
 }
 
-function selectAddress(address) {
-  addressForm.value = {
-    idDireccion: address.idDireccion,
-    Calle: address.Calle,
-    Numero: address.Numero,
-    Piso: address.Piso || '',
-    Puerta: address.Puerta || '',
-    Ciudad: address.Ciudad,
-    Municipio: address.Municipio,
-    Provincia: address.Provincia,
-    CP: address.CP
-  }
+async function loadLastActiveAddress() {
+  try {
+    const addresses = await getUserAddresses()
+    const activeAddress = addresses
+      .filter((address) => address.Activo === 1)
+      .sort((a, b) => b.idDireccion - a.idDireccion)[0]
 
-  addressMessage.value = `Dirección seleccionada: ${formatAddress(address)}`
+    if (activeAddress) {
+      savedAddress.value = activeAddress
+      savedAddressSnapshot.value = getComparableAddress(activeAddress)
+      fillAddressForm(activeAddress)
+      addressMessage.value = 'Se ha cargado tu última dirección activa. Puedes usarla o modificarla y guardar una nueva.'
+    } else {
+      addressMessage.value = 'Introduce una dirección de envío y guárdala antes de confirmar el pedido.'
+    }
+  } catch (error) {
+    addressMessage.value = 'Introduce una dirección de envío y guárdala antes de confirmar el pedido.'
+    console.error('Error cargando dirección activa:', error)
+  }
 }
 
-function saveAddress() {
+async function saveAddress() {
   if (!isAddressFormValid.value) {
     addressMessage.value = 'Revisa los datos de la dirección antes de guardarla.'
     return
   }
 
-  const savedAddressMock = {
-    idDireccion: addressForm.value.idDireccion,
-    idUsuario: mockUser.idUsuario,
-    Calle: addressForm.value.Calle,
-    Numero: addressForm.value.Numero,
-    Piso: addressForm.value.Piso || null,
-    Puerta: addressForm.value.Puerta || null,
-    Ciudad: addressForm.value.Ciudad,
-    Municipio: addressForm.value.Municipio,
-    Provincia: addressForm.value.Provincia,
-    CP: addressForm.value.CP,
-    Activo: 1
+  if (isAddressSaved.value) {
+    addressMessage.value = 'La dirección ya está guardada y se usará para este pedido.'
+    return
   }
-  console.log('Dirección simulada para guardar:', savedAddressMock)
-  addressMessage.value = 'Dirección preparada para guardar. En backend se guardará en la tabla Direccion.'
+
+  addressSaving.value = true
+
+  try {
+    const createdAddress = await createUserAddress({
+      ...addressForm.value,
+      idDireccion: null
+    })
+
+    if (createdAddress?.idDireccion) {
+      savedAddress.value = createdAddress
+      savedAddressSnapshot.value = getComparableAddress(createdAddress)
+      fillAddressForm(createdAddress)
+      addressMessage.value = 'Dirección guardada y seleccionada para este pedido.'
+    } else {
+      await loadLastActiveAddress()
+      addressMessage.value = 'Dirección guardada y seleccionada para este pedido.'
+    }
+  } catch (error) {
+    addressMessage.value = 'No se pudo guardar la dirección. Revisa los datos e inténtalo de nuevo.'
+    console.error('Error guardando dirección:', error)
+  } finally {
+    addressSaving.value = false
+  }
 }
 
 function getSimulatedPaymentStatus() {
@@ -229,6 +304,7 @@ function getSimulatedPaymentStatus() {
 
 function getSimulatedPaymentData() {
   if (!selectedPaymentMethod.value) return null
+
   if (selectedPaymentMethod.value.Tipo === 'card') {
     return {
       tipo: 'tarjeta',
@@ -237,12 +313,14 @@ function getSimulatedPaymentData() {
       fechaCaducidad: cardForm.value.FechaCaducidad
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'bizum') {
     return {
       tipo: 'bizum',
       telefono: bizumForm.value.TelefonoBizum
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'transfer') {
     return {
       tipo: 'transferencia',
@@ -264,54 +342,70 @@ function simulatePayment() {
       message: 'Revisa la información personal. El nombre, apellidos, email y teléfono deben tener un formato válido.'
     }
   }
+
   if (!isAddressFormValid.value) {
     return {
       success: false,
       message: 'Revisa la dirección de envío. El código postal debe tener 5 dígitos y los campos obligatorios deben ser válidos.'
     }
   }
+
+  if (!isAddressSaved.value) {
+    return {
+      success: false,
+      message: 'Guarda la dirección de envío antes de confirmar el pedido.'
+    }
+  }
+
   if (!selectedPaymentMethod.value) {
     return {
       success: false,
       message: 'Selecciona un método de pago.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'card' && !isCardFormValid.value) {
     return {
       success: false,
       message: 'Revisa los datos de la tarjeta.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'bizum' && !isBizumFormValid.value) {
     return {
       success: false,
       message: 'Introduce un teléfono Bizum válido.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'transfer' && !isTransferFormValid.value) {
     return {
       success: false,
       message: 'Introduce el nombre del titular que realizará la transferencia.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'transfer') {
     return {
       success: true,
       message: 'Pedido registrado. El pago queda pendiente por transferencia bancaria.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'cash') {
     return {
       success: true,
       message: 'Pedido registrado. El pago se realizará al recibir el pedido.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'paypal') {
     return {
       success: true,
       message: 'Pago simulado correctamente mediante PayPal.'
     }
   }
+
   if (selectedPaymentMethod.value.Tipo === 'wallet') {
     return {
       success: true,
@@ -327,17 +421,18 @@ function simulatePayment() {
 
 function confirmOrder() {
   const paymentResult = simulatePayment()
+
   if (!paymentResult.success) {
     paymentMessage.value = paymentResult.message
     return
   }
+
   const orderMock = {
     usuario: {
-      idUsuario: mockUser.idUsuario,
       ...personalForm.value
     },
     direccion: {
-      idDireccion: addressForm.value.idDireccion,
+      idDireccion: savedAddress.value.idDireccion,
       ...addressForm.value
     },
     idMetodoPago: selectedPaymentMethodId.value,
@@ -349,6 +444,7 @@ function confirmOrder() {
     ivaIncluido: cartIvaTotal.value,
     totalConIva: cartTotal.value
   }
+
   console.log('Pedido simulado:', orderMock)
   paymentMessage.value = paymentResult.message
   orderConfirmed.value = true
@@ -357,6 +453,7 @@ function confirmOrder() {
 
 onMounted(() => {
   loadPaymentMethods()
+  loadLastActiveAddress()
 })
 </script>
 
@@ -416,6 +513,8 @@ onMounted(() => {
             <h1>Dirección de envío</h1>
           </div>
 
+          <p class="checkout-message">Introduce la dirección de envío. Al guardarla, se creará como dirección activa y las anteriores quedarán inactivas en la base de datos.</p>
+
           <div class="checkout-address-data">
             <label>
               <span>Calle</span>
@@ -466,17 +565,12 @@ onMounted(() => {
             </label>
           </div>
 
-          <button class="checkout-save-address" type="button" @click="saveAddress">Guardar dirección</button>
+          <button class="checkout-save-address" type="button" :disabled="addressSaving" @click="saveAddress">
+            {{ addressSaving ? 'Guardando dirección...' : 'Guardar como dirección activa' }}
+          </button>
+
+          <p v-if="savedAddress" class="checkout-message">Dirección seleccionada: {{ formatAddress(savedAddress) }}</p>
           <p v-if="addressMessage" class="checkout-message">{{ addressMessage }}</p>
-          <div class="checkout-saved-addresses">
-            <h2>Direcciones guardadas</h2>
-            <button v-for="address in visibleAddresses" :key="address.idDireccion" class="checkout-address-card" :class="{ 'checkout-address-card-active': address.Activo === 1 }" type="button" @click="selectAddress(address)">
-              <span>
-                <strong>{{ formatAddress(address) }}</strong>
-                <small>{{ address.Activo === 1 ? 'Dirección activa' : 'Dirección guardada' }}</small>
-              </span>
-            </button>
-          </div>
         </section>
 
         <section class="checkout-block">
@@ -484,8 +578,10 @@ onMounted(() => {
             <CreditCard :size="22" :stroke-width="2.4" />
             <h1>Método de pago</h1>
           </div>
+
           <p v-if="paymentMethodsLoading" class="checkout-message">Cargando métodos de pago...</p>
           <p v-else-if="paymentMethodsError" class="checkout-message">{{ paymentMethodsError }}</p>
+
           <div v-else class="checkout-options">
             <label v-for="method in paymentMethods" :key="method.idMetodoPago" class="checkout-option">
               <input v-model="selectedPaymentMethodId" type="radio" :value="method.idMetodoPago" />
@@ -505,24 +601,30 @@ onMounted(() => {
                 <input v-model="cardForm.Titular" type="text" placeholder="Titular de la tarjeta" :class="{ 'checkout-input-error': showError(cardForm.Titular, isCardTitularValid) }" />
                 <small v-if="showError(cardForm.Titular, isCardTitularValid)" class="checkout-field-error">El titular debe contener solo letras y mínimo 2 caracteres.</small>
               </label>
+
               <label>
                 <input v-model="cardForm.NumeroTarjeta" type="text" placeholder="Número de tarjeta, 16 dígitos" :class="{ 'checkout-input-error': showError(cardForm.NumeroTarjeta, isCardNumberValid) }" />
                 <small v-if="showError(cardForm.NumeroTarjeta, isCardNumberValid)" class="checkout-field-error">El número de tarjeta debe tener 16 dígitos.</small>
               </label>
+
               <label>
                 <input v-model="cardForm.FechaCaducidad" type="text" placeholder="MM/AA" :class="{ 'checkout-input-error': showError(cardForm.FechaCaducidad, isCardExpiryValid) }" />
                 <small v-if="showError(cardForm.FechaCaducidad, isCardExpiryValid)" class="checkout-field-error">Formato válido: MM/AA y fecha no caducada.</small>
               </label>
+
               <label>
                 <input v-model="cardForm.CVV" type="text" placeholder="CVV" :class="{ 'checkout-input-error': showError(cardForm.CVV, isCardCvvValid) }" />
                 <small v-if="showError(cardForm.CVV, isCardCvvValid)" class="checkout-field-error">El CVV debe tener 3 o 4 dígitos.</small>
               </label>
             </div>
+
             <p class="checkout-payment-note">Ejemplo válido: 4111111111111111 · 12/30 · 123</p>
           </div>
+
           <div v-else-if="selectedPaymentMethod?.Tipo === 'bizum'" class="checkout-payment-simulation">
             <h2>Datos de Bizum</h2>
             <p>Introduce el teléfono asociado a Bizum. No se realizará ningún cargo real.</p>
+
             <div class="checkout-card-form">
               <label>
                 <input v-model="bizumForm.TelefonoBizum" type="text" placeholder="Teléfono Bizum, ej. 600123456 o +34600123456" :class="{ 'checkout-input-error': showError(bizumForm.TelefonoBizum, isBizumFormValid) }" />
@@ -530,15 +632,18 @@ onMounted(() => {
               </label>
             </div>
           </div>
+
           <div v-else-if="selectedPaymentMethod?.Tipo === 'transfer'" class="checkout-payment-simulation">
             <h2>Datos de transferencia bancaria</h2>
             <p>El pedido quedará registrado como pendiente de pago.</p>
+
             <div class="checkout-card-form">
               <label>
                 <input v-model="transferForm.TitularTransferencia" type="text" placeholder="Nombre del titular de la transferencia" :class="{ 'checkout-input-error': showError(transferForm.TitularTransferencia, isTransferFormValid) }" />
                 <small v-if="showError(transferForm.TitularTransferencia, isTransferFormValid)" class="checkout-field-error">El titular debe contener solo letras y mínimo 2 caracteres.</small>
               </label>
             </div>
+
             <p><strong>IBAN simulado:</strong> ES00 0000 0000 0000 0000 0000</p>
             <p><strong>Referencia:</strong> FUNKOMANIA-PEDIDO</p>
           </div>
@@ -547,6 +652,7 @@ onMounted(() => {
 
       <aside class="checkout-summary-panel">
         <h1>Artículos</h1>
+
         <div class="checkout-products">
           <article v-for="product in cart" :key="product.idProducto" class="checkout-product">
             <div class="checkout-product-image-wrap">
@@ -563,6 +669,7 @@ onMounted(() => {
 
         <div class="checkout-totals-box">
           <h2>Sumas y impuestos</h2>
+
           <div class="checkout-summary-row">
             <span>Base imponible</span>
             <strong>{{ cartBaseTotal.toFixed(2) }}€</strong>
@@ -572,9 +679,11 @@ onMounted(() => {
             <span>IVA incluido</span>
             <strong>{{ cartIvaTotal.toFixed(2) }}€</strong>
           </div>
+
           <p class="checkout-shipping-note">
             <strong>Nota:</strong> el coste de envío no está incluido en el precio de los productos.
           </p>
+
           <div class="checkout-summary-row checkout-summary-total">
             <span>Total</span>
             <strong>{{ cartTotal.toFixed(2) }}€</strong>
