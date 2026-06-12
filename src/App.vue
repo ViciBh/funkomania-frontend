@@ -5,12 +5,12 @@
  * @author Viktoriia Bohoslavska
  */
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { ShoppingCart, User, Menu, X, Heart, Bell, LogOut } from 'lucide-vue-next'
 import { cartCount } from '@/composables/useCart'
 import { useAuth } from '@/composables/useAuth'
-import { notifications, notificationsLoading, notificationsError, unreadNotificationsCount, isNotificationUnread, loadNotifications, readNotification, clearNotifications } from '@/composables/useNotifications'
+import { notifications, notificationsLoading, notificationsError, unreadNotificationsCount, isNotificationUnread, getNotificationStatusText, loadNotifications, readNotification, clearNotifications } from '@/composables/useNotifications'
 import CartSidebar from '@/components/CartSidebar.vue'
 
 const route = useRoute()
@@ -72,6 +72,14 @@ onMounted(() => {
     loadNotifications()
   }
 })
+
+watch(isAuthenticated, (authenticated) => {
+  if (authenticated) {
+    loadNotifications()
+  } else {
+    clearNotifications()
+  }
+})
 </script>
 
 <template>
@@ -104,7 +112,7 @@ onMounted(() => {
                 <button v-for="notification in notifications" :key="notification.idNotificacion" class="notification-item" :class="{ 'notification-item-unread': isNotificationUnread(notification) }" type="button" @click="handleReadNotification(notification.idNotificacion)">
                   <span class="notification-type">{{ notification.tipoNotificacion }}</span>
                   <strong>{{ notification.mensaje }}</strong>
-                  <small>{{ isNotificationUnread(notification) ? 'Pendiente' : 'Leída' }}</small>
+                  <small>{{ getNotificationStatusText(notification) }}</small>
                 </button>
               </div>
               <p v-else class="notification-empty">No tienes notificaciones.</p>

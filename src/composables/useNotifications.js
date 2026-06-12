@@ -21,7 +21,6 @@ function hasToken() {
 
 function fixMojibake(text) {
   if (!text) return ''
-
   try {
     return decodeURIComponent(escape(text))
   } catch {
@@ -31,7 +30,10 @@ function fixMojibake(text) {
 
 function isNotificationUnread(notification) {
   const estado = notification.estadoNotificacion || notification.estado || ''
-  return estado.toUpperCase() === 'PENDIENTE'
+  return estado.toUpperCase() === 'PENDIENTE' || estado.toUpperCase() === 'ENVIADA'
+}
+function getNotificationStatusText(notification) {
+  return isNotificationUnread(notification) ? 'No leída' : 'Leída'
 }
 
 function normalizeNotification(notification) {
@@ -91,6 +93,7 @@ export {
   notificationsLoaded,
   unreadNotificationsCount,
   isNotificationUnread,
+  getNotificationStatusText,
   loadNotifications,
   readNotification,
   clearNotifications
