@@ -1,5 +1,5 @@
 /**
- * Estilos del pagina de compra de Funkomanía.
+ * Estilos de la página de checkout de Funkomanía.
  *
  * @author Viktoriia Bohoslavska
  */
@@ -103,63 +103,21 @@
   transition: 0.2s ease;
 }
 
-.checkout-save-address:hover {
+.checkout-save-address:hover:not(:disabled) {
   background: var(--color-primary-hover);
 }
 
-.checkout-saved-addresses {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 2px solid var(--color-border);
-  display: grid;
-  gap: 10px;
+.checkout-save-address:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.checkout-saved-addresses h2 {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 18px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.checkout-address-card {
-  width: 100%;
-  padding: 14px;
-  border-radius: 18px;
-  background: var(--color-bg-soft);
-  border: 2px solid var(--color-border);
-  color: var(--color-text-main);
-  text-align: left;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.checkout-address-card:hover {
-  border-color: var(--color-primary-soft);
-  background: var(--color-bg);
-}
-
-.checkout-address-card-active {
-  border-color: var(--color-accent);
-  background:
-    radial-gradient(circle at top left, rgba(248, 136, 180, 0.12), transparent 34%),
-    var(--color-bg-soft);
-}
-
-.checkout-address-card strong {
-  display: block;
-  color: var(--color-primary);
-  font-size: 14px;
-  line-height: 1.35;
-}
-
-.checkout-address-card small {
-  display: block;
-  margin-top: 5px;
+.checkout-message {
+  margin: 12px 0 0;
   color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .checkout-options {
@@ -234,6 +192,12 @@
   gap: 10px;
 }
 
+.checkout-card-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .checkout-card-form input {
   min-height: 42px;
   padding: 0 12px;
@@ -247,6 +211,11 @@
 
 .checkout-card-form input:focus {
   border-color: var(--color-accent);
+}
+
+.checkout-payment-note {
+  margin-top: 10px;
+  font-weight: 800;
 }
 
 .checkout-summary-panel {
@@ -373,6 +342,27 @@
   font-size: 18px;
 }
 
+.checkout-shipping-note {
+  margin: 12px 0 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(79, 52, 117, 0.18), transparent 75%),
+    var(--color-bg-soft);
+  border: 2px solid rgba(79, 52, 117, 0.38);
+  border-left: 6px solid var(--color-primary-hover);
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.checkout-shipping-note strong {
+  color: var(--color-accent-second);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .checkout-confirm-button {
   width: 100%;
   min-height: 42px;
@@ -463,6 +453,17 @@
   color: var(--color-text-secondary);
 }
 
+.checkout-input-error {
+  border-color: #e5484d !important;
+  background: #fff5f5 !important;
+}
+
+.checkout-field-error {
+  color: #c92a2a;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
 /* CHECKOUT RESPONSIVE */
 
 @media (max-width: 950px) {
@@ -491,10 +492,7 @@
   }
 
   .checkout-personal-data,
-  .checkout-address-data {
-    grid-template-columns: 1fr;
-  }
-
+  .checkout-address-data,
   .checkout-card-form {
     grid-template-columns: 1fr;
   }
@@ -515,42 +513,4 @@
     width: 100%;
     height: 140px;
   }
-}
-
-.checkout-shipping-note {
-  margin: 12px 0 6px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background:
-    linear-gradient(90deg, rgba(79, 52, 117, 0.18), transparent 75%),
-    var(--color-bg-soft);
-  border: 2px solid rgba(79, 52, 117, 0.38);
-  border-left: 6px solid var(--color-primary-hover);
-  color: var(--color-text-main);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.checkout-shipping-note strong {
-  color: var(--color-accent-second);
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.checkout-card-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.checkout-input-error {
-  border-color: #e5484d !important;
-  background: #fff5f5;
-}
-
-.checkout-field-error {
-  color: #c92a2a;
-  font-size: 0.78rem;
-  line-height: 1.2;
 }

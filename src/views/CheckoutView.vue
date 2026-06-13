@@ -12,7 +12,7 @@ import { getCart, cartBaseTotal, cartIvaTotal, cartTotal, clearCart } from '@/co
 import { useAuth } from '@/composables/useAuth'
 import { getProductImage } from '@/data/products'
 import { getPaymentMethods } from '@/services/paymentService'
-import { createUserAddress, getUserAddresses, formatAddress } from '@/services/addressService'
+import { createUserAddress, getUserAddresses } from '@/services/addressService'
 
 const cart = getCart()
 const { authUser } = useAuth()
@@ -56,7 +56,6 @@ const selectedPaymentMethodId = ref(null)
 const orderConfirmed = ref(false)
 const paymentMessage = ref('')
 const addressMessage = ref('')
-
 const selectedPaymentMethod = computed(() => {
   return paymentMethods.value.find((method) => method.idMetodoPago === selectedPaymentMethodId.value) || null
 })
@@ -244,12 +243,11 @@ async function loadLastActiveAddress() {
     const activeAddress = addresses
       .filter((address) => address.Activo === 1)
       .sort((a, b) => b.idDireccion - a.idDireccion)[0]
-
     if (activeAddress) {
       savedAddress.value = activeAddress
       savedAddressSnapshot.value = getComparableAddress(activeAddress)
       fillAddressForm(activeAddress)
-      addressMessage.value = 'Se ha cargado tu última dirección activa. Puedes usarla o modificarla y guardar una nueva.'
+      addressMessage.value = 'Se ha cargado tu última dirección usada. Puedes usarla o modificarla y guardar una nueva.'
     } else {
       addressMessage.value = 'Introduce una dirección de envío y guárdala antes de confirmar el pedido.'
     }
@@ -566,10 +564,8 @@ onMounted(() => {
           </div>
 
           <button class="checkout-save-address" type="button" :disabled="addressSaving" @click="saveAddress">
-            {{ addressSaving ? 'Guardando dirección...' : 'Guardar como dirección activa' }}
+            {{ addressSaving ? 'Guardando dirección...' : 'Guardar dirección ' }}
           </button>
-
-          <p v-if="savedAddress" class="checkout-message">Dirección seleccionada: {{ formatAddress(savedAddress) }}</p>
           <p v-if="addressMessage" class="checkout-message">{{ addressMessage }}</p>
         </section>
 
