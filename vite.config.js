@@ -30,6 +30,10 @@ export default defineConfig({
       '/metodos-pago': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/carrito': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }
