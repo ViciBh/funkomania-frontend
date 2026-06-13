@@ -1,6 +1,6 @@
 /**
  * Vista de checkout de Funkomanía.
- * Gestiona los datos personales, dirección de envío, métodos de pago y confirmación simulada del pedido.
+ * Gestiona los datos personales, dirección de envío, métodos de pago y creación real del pedido desde el carrito.
  *
  * @author Viktoriia Bohoslavska
  */
@@ -8,11 +8,12 @@
 import { computed, ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CheckCircle, CreditCard, MapPin, ShoppingCart, User } from 'lucide-vue-next'
-import { getCart, cartBaseTotal, cartIvaTotal, cartTotal, clearCart } from '@/composables/useCart'
+import { getCart, cartBaseTotal, cartIvaTotal, cartTotal, loadCart } from '@/composables/useCart'
 import { useAuth } from '@/composables/useAuth'
 import { getProductImage } from '@/data/products'
 import { getPaymentMethods } from '@/services/paymentService'
 import { createUserAddress, getUserAddresses } from '@/services/addressService'
+import { createOrderFromCart } from '@/services/orderService'
 
 const cart = getCart()
 const { authUser } = useAuth()
@@ -54,8 +55,11 @@ const transferForm = ref({
 })
 const selectedPaymentMethodId = ref(null)
 const orderConfirmed = ref(false)
+const orderCreating = ref(false)
+const orderCode = ref('')
 const paymentMessage = ref('')
 const addressMessage = ref('')
+
 const selectedPaymentMethod = computed(() => {
   return paymentMethods.value.find((method) => method.idMetodoPago === selectedPaymentMethodId.value) || null
 })
@@ -201,7 +205,8 @@ const canConfirmOrder = computed(() => {
     isAddressFormValid.value &&
     isAddressSaved.value &&
     selectedPaymentMethodId.value &&
-    isPaymentFormValid.value
+    isPaymentFormValid.value &&
+    !orderCreating.value
 })
 
 function showError(value, isValid) {
@@ -243,6 +248,7 @@ async function loadLastActiveAddress() {
     const activeAddress = addresses
       .filter((address) => address.Activo === 1)
       .sort((a, b) => b.idDireccion - a.idDireccion)[0]
+
     if (activeAddress) {
       savedAddress.value = activeAddress
       savedAddressSnapshot.value = getComparableAddress(activeAddress)
@@ -417,7 +423,7 @@ function simulatePayment() {
   }
 }
 
-function confirmOrder() {
+async function confirmOrder() {
   const paymentResult = simulatePayment()
 
   if (!paymentResult.success) {
@@ -425,28 +431,26 @@ function confirmOrder() {
     return
   }
 
-  const orderMock = {
-    usuario: {
-      ...personalForm.value
-    },
-    direccion: {
-      idDireccion: savedAddress.value.idDireccion,
-      ...addressForm.value
-    },
-    idMetodoPago: selectedPaymentMethodId.value,
-    metodoPago: selectedPaymentMethod.value?.Nombre,
-    estadoPago: getSimulatedPaymentStatus(),
-    datosPagoSimulado: getSimulatedPaymentData(),
-    productos: cart.value,
-    baseImponible: cartBaseTotal.value,
-    ivaIncluido: cartIvaTotal.value,
-    totalConIva: cartTotal.value
-  }
+  orderCreating.value = true
+  paymentMessage.value = ''
 
-  console.log('Pedido simulado:', orderMock)
-  paymentMessage.value = paymentResult.message
-  orderConfirmed.value = true
-  clearCart()
+  try {
+    const createdOrder = await createOrderFromCart({
+      idDireccion: savedAddress.value.idDireccion,
+      idMetodoPago: selectedPaymentMethodId.value,
+      comentarios: ''
+    })
+
+    orderCode.value = createdOrder?.codigoPedido || ''
+    paymentMessage.value = createdOrder?.mensaje || paymentResult.message || 'Pedido confirmado correctamente.'
+    orderConfirmed.value = true
+    await loadCart()
+  } catch (error) {
+    paymentMessage.value = 'No se pudo crear el pedido. Revisa el carrito, la dirección y el método de pago.'
+    console.error('Error creando pedido:', error)
+  } finally {
+    orderCreating.value = false
+  }
 }
 
 onMounted(() => {
@@ -461,6 +465,7 @@ onMounted(() => {
       <CheckCircle :size="54" :stroke-width="2.2" />
       <h1>Pedido confirmado</h1>
       <p>{{ paymentMessage }}</p>
+      <p v-if="orderCode"><strong>Código de pedido:</strong> {{ orderCode }}</p>
       <RouterLink to="/catalogo" class="checkout-main-link">Volver al catálogo</RouterLink>
     </section>
 
@@ -564,8 +569,9 @@ onMounted(() => {
           </div>
 
           <button class="checkout-save-address" type="button" :disabled="addressSaving" @click="saveAddress">
-            {{ addressSaving ? 'Guardando dirección...' : 'Guardar dirección ' }}
+            {{ addressSaving ? 'Guardando dirección...' : 'Guardar dirección' }}
           </button>
+
           <p v-if="addressMessage" class="checkout-message">{{ addressMessage }}</p>
         </section>
 
@@ -689,7 +695,7 @@ onMounted(() => {
         <p v-if="paymentMessage" class="checkout-message">{{ paymentMessage }}</p>
 
         <button class="checkout-confirm-button" type="button" :disabled="!canConfirmOrder" @click="confirmOrder">
-          Comprar
+          {{ orderCreating ? 'Creando pedido...' : 'Comprar' }}
         </button>
 
         <RouterLink to="/carrito" class="checkout-back-cart">Volver al carrito</RouterLink>

@@ -34,6 +34,10 @@ export default defineConfig({
       '/carrito': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/pedidos': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

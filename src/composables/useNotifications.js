@@ -28,20 +28,29 @@ function fixMojibake(text) {
   }
 }
 
+function getNotificationEstado(notification) {
+  return String(notification.estadoNotificacion || notification.estado || '').toUpperCase()
+}
+
+function shouldShowNotification(notification) {
+  const estado = getNotificationEstado(notification)
+  return estado === 'ENVIADA' || estado === 'LEIDA'
+}
+
 function isNotificationUnread(notification) {
-  const estado = notification.estadoNotificacion || notification.estado || ''
-  return estado.toUpperCase() === 'PENDIENTE' || estado.toUpperCase() === 'ENVIADA'
+  return getNotificationEstado(notification) === 'ENVIADA'
 }
 function getNotificationStatusText(notification) {
   return isNotificationUnread(notification) ? 'No leída' : 'Leída'
 }
 
 function normalizeNotification(notification) {
+  const estado = getNotificationEstado(notification)
   return {
     idNotificacion: notification.idNotificacion,
     idUsuario: notification.idUsuario,
-    tipoNotificacion: notification.tipoNotificacion || 'NOTIFICACION',
-    estadoNotificacion: notification.estadoNotificacion || 'PENDIENTE',
+    tipoNotificacion: notification.tipoNotificacion || notification.tipo || 'NOTIFICACION',
+    estadoNotificacion: estado || 'PENDIENTE',
     mensaje: fixMojibake(notification.mensaje || 'Nueva notificación')
   }
 }
@@ -56,7 +65,9 @@ async function loadNotifications() {
   notificationsError.value = ''
   try {
     const data = await getUserNotifications()
-    notifications.value = data.map(normalizeNotification)
+    notifications.value = data
+      .map(normalizeNotification)
+      .filter(shouldShowNotification)
     notificationsLoaded.value = true
   } catch (error) {
     notificationsError.value = 'No se pudieron cargar las notificaciones.'

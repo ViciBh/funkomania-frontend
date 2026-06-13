@@ -70,7 +70,7 @@ const cart = getCart()
           <span>Total</span>
           <strong>{{ cartTotal.toFixed(2) }}€</strong>
         </div>
-        <RouterLink :to="checkoutRoute" class="cart-sidebar-buy" @click="$emit('close')">Comprar</RouterLink>
+        <RouterLink to="/carrito" class="cart-sidebar-buy" @click="$emit('close')">Comprar</RouterLink>
       </div>
     </aside>
   </div>
