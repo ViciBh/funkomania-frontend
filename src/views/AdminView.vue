@@ -241,7 +241,7 @@ function normalizeOrder(order) {
 
 function normalizeOrderLine(line) {
   return {
-    idLinea: `${getFirstValue(line, ['idPedido'], 'pedido')}-${getFirstValue(line, ['idProducto'], 'producto')}-${Date.now()}-${Math.random()}`,
+    idLinea: `${getFirstValue(line, ['idPedido'], 'pedido')}-${getFirstValue(line, ['idProducto'], 'producto')}`,
     idPedido: getFirstValue(line, ['idPedido'], null),
     idProducto: getFirstValue(line, ['idProducto'], null),
     Nombre: getFirstValue(line, ['Nombre', 'nombreProducto'], 'Producto pedido'),
@@ -529,7 +529,7 @@ const activePaymentMethods = computed(() => {
 })
 
 const availableParentCategories = computed(() => {
-  return categoryList.value.filter((category) => category.idCategoria !== Number(productForm.value.idCategoria))
+  return categoryList.value
 })
 
 const availableCategoryParentOptions = computed(() => {
@@ -785,8 +785,8 @@ function closeProductModal() {
 function handleProductImageUpload(event) {
   const file = event.target.files?.[0]
   if (!file) return
-
-  productForm.value.Image = URL.createObjectURL(file)
+  event.target.value = ''
+  showError('La subida real de imágenes no está implementada. Introduce el nombre del archivo o una URL en "Ruta imagen".')
 }
 
 async function createCategoryIfNeeded() {
@@ -1100,7 +1100,7 @@ async function saveOrderChanges() {
       return
     }
   }
-
+  
   if (!validateOrderLines()) return
 
   try {
