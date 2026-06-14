@@ -796,11 +796,17 @@ function closeProductModal() {
   productModalOpen.value = false
 }
 
-async function handleProductImageUpload(event){
+async function handleProductImageUpload(event) {
   const file = event.target.files?.[0]
-
   if (!file) return
-  try{
+
+  if (!supabase) {
+    showError('Supabase no está configurado. Revisa VITE_SUPABASE_URL y VITE_SUPABASE_KEY.')
+    event.target.value = ''
+    return
+  }
+
+  try {
     const fileName = `${Date.now()}-${file.name}`
 
     const { error } = await supabase
@@ -816,11 +822,9 @@ async function handleProductImageUpload(event){
       .storage
       .from('productos')
       .getPublicUrl(fileName)
-    
-    productForm.value.Image = data.getPublicUrl
 
-    showMesaage('Imagen subida correctamente.')
-
+    productForm.value.Image = data.publicUrl
+    showMessage('Imagen subida correctamente.')
   } catch (error) {
     console.error(error)
     showError('Error al subir la imagen.')
