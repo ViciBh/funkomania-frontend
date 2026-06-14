@@ -20,6 +20,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    globals: true
+    globals: true,
+    include: ['src/tests/**/*.test.js'],
+    exclude: ['node_modules', 'dist', 'e2e/**']
   }
 })
