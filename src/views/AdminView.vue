@@ -128,7 +128,7 @@ function normalizeUser(user) {
     Apellido1: getFirstValue(user, ['Apellido1', 'apellido1'], ''),
     Apellido2: getFirstValue(user, ['Apellido2', 'apellido2'], ''),
     Telefono: getFirstValue(user, ['Telefono', 'telefono'], ''),
-    Rol: getFirstValue(user, ['Rol', 'rol'], 'CLIENTE'),
+    Rol: String(getFirstValue(user, ['Rol', 'rol'], 'CLIENTE')).toUpperCase(),
     Activo: normalizeBoolean(getFirstValue(user, ['Activo', 'activo'], true)) ? 1 : 0
   }
 }
@@ -394,6 +394,9 @@ async function loadAdminData() {
   ])
 }
 
+const clientUsersForOrders = computed(() => {
+  return usersList.value.filter((user) => user.Activo === 1 && String(user.Rol).toUpperCase() === 'CLIENTE')
+})
 const filteredUsers = computed(() => {
   const text = userSearch.value.trim().toLowerCase()
 
@@ -816,11 +819,15 @@ async function handleDeleteCategory(category) {
   }
 }
 
-function openNewOrderModal() {
+async function openNewOrderModal() {
+  clearMessages()
+
+  if (usersList.value.length === 0) await loadUsers()
+  if (productList.value.length === 0) await loadProducts()
+  if (paymentMethods.value.length === 0) await loadPaymentMethods()
   const firstProduct = productList.value[0]
   const firstPaymentMethod = activePaymentMethods.value[0] || null
 
-  clearMessages()
   orderModalMode.value = 'create'
 
   selectedOrder.value = {
@@ -1490,7 +1497,7 @@ onMounted(() => {
             <span>Usuario</span>
             <select v-model="selectedOrder.idUsuario" :disabled="orderModalMode === 'edit'" @change="handleOrderUserChange">
               <option value="">Selecciona usuario</option>
-              <option v-for="user in usersList" :key="user.idUsuario" :value="user.idUsuario">
+              <option v-for="user in clientUsersForOrders" :key="user.idUsuario" :value="user.idUsuario">
                 ID {{ user.idUsuario }} - {{ user.Nombre }} {{ user.Apellido1 }} - {{ user.email }}
               </option>
             </select>
