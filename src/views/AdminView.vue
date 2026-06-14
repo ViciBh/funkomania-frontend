@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 import { AlertTriangle, BadgePercent, Boxes, ChevronLeft, ChevronRight, Edit, Eye, ImagePlus, LogOut, PackagePlus, PackageSearch, Plus, Save, Search, ShieldCheck, ShoppingBag, Trash2, UserRound, X } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
 import { getProductImage } from '@/data/products'
-import { getAdminStockAlerts, getAdminUsers, getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminOrders, getAdminOrderDetail, createAdminOrder, updateAdminOrder, addAdminOrderLine, updateAdminOrderLine, deleteAdminOrderLine, getPaymentMethods } from '@/services/adminService'
+import { getAdminStockAlerts, getAdminUsers, getAdminUserAddresses, getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminOrders, getAdminOrderDetail, createAdminOrder, updateAdminOrder, addAdminOrderLine, updateAdminOrderLine, deleteAdminOrderLine, getPaymentMethods } from '@/services/adminService'
 
 const router = useRouter()
 const { authUser, clearAuthUser } = useAuth()
@@ -24,12 +24,14 @@ const globalMessage = ref('')
 const globalError = ref('')
 const stockAlerts = ref([])
 const usersList = ref([])
+const userAddresses = ref([])
 const productList = ref([])
 const categoryList = ref([])
 const orderList = ref([])
 const paymentMethods = ref([])
 const stockAlertsLoading = ref(false)
 const usersLoading = ref(false)
+const userAddressesLoading = ref(false)
 const productsLoading = ref(false)
 const categoriesLoading = ref(false)
 const ordersLoading = ref(false)
@@ -37,6 +39,7 @@ const orderDetailLoading = ref(false)
 const paymentMethodsLoading = ref(false)
 const stockAlertsError = ref('')
 const usersError = ref('')
+const userAddressesError = ref('')
 const productsError = ref('')
 const categoriesError = ref('')
 const ordersError = ref('')
@@ -65,11 +68,13 @@ const productForm = ref({
   Descuento: 0,
   FechaFinOferta: ''
 })
+
 const categoryForm = ref({
   idCategoria: null,
   Nombre: '',
   CategoriaPadre: null
 })
+
 const categoryMode = ref('existing')
 const newCategoryName = ref('')
 const categoryParentId = ref(null)
@@ -114,10 +119,12 @@ function showMessage(message) {
   globalError.value = ''
 }
 
-function showError(message, error) {
+function showError(message, error = null) {
   globalError.value = message
   globalMessage.value = ''
-  console.error(message, error)
+  if (error) {
+    console.error(message, error)
+  }
 }
 
 function normalizeUser(user) {
@@ -130,6 +137,22 @@ function normalizeUser(user) {
     Telefono: getFirstValue(user, ['Telefono', 'telefono'], ''),
     Rol: String(getFirstValue(user, ['Rol', 'rol'], 'CLIENTE')).toUpperCase(),
     Activo: normalizeBoolean(getFirstValue(user, ['Activo', 'activo'], true)) ? 1 : 0
+  }
+}
+
+function normalizeAddress(address) {
+  return {
+    idDireccion: getFirstValue(address, ['idDireccion', 'id'], null),
+    idUsuario: getFirstValue(address, ['idUsuario'], null),
+    Calle: getFirstValue(address, ['Calle', 'calle'], ''),
+    Numero: getFirstValue(address, ['Numero', 'numero'], ''),
+    Piso: getFirstValue(address, ['Piso', 'piso'], ''),
+    Puerta: getFirstValue(address, ['Puerta', 'puerta'], ''),
+    Ciudad: getFirstValue(address, ['Ciudad', 'ciudad'], ''),
+    Municipio: getFirstValue(address, ['Municipio', 'municipio'], ''),
+    Provincia: getFirstValue(address, ['Provincia', 'provincia'], ''),
+    CP: getFirstValue(address, ['CP', 'cp', 'codigoPostal'], ''),
+    Activo: normalizeBoolean(getFirstValue(address, ['Activo', 'activo'], true)) ? 1 : 0
   }
 }
 
@@ -319,6 +342,30 @@ async function loadUsers() {
   }
 }
 
+async function loadUserAddresses(idUsuario) {
+  userAddressesLoading.value = true
+  userAddressesError.value = ''
+  userAddresses.value = []
+
+  if (!idUsuario) {
+    userAddressesLoading.value = false
+    return []
+  }
+
+  try {
+    const data = await getAdminUserAddresses(idUsuario)
+    userAddresses.value = asArray(data).map(normalizeAddress)
+    return userAddresses.value
+  } catch (error) {
+    userAddresses.value = []
+    userAddressesError.value = 'No se pudieron cargar las direcciones del usuario.'
+    console.error('Error cargando direcciones usuario:', error)
+    return []
+  } finally {
+    userAddressesLoading.value = false
+  }
+}
+
 async function loadProducts() {
   productsLoading.value = true
   productsError.value = ''
@@ -397,6 +444,7 @@ async function loadAdminData() {
 const clientUsersForOrders = computed(() => {
   return usersList.value.filter((user) => user.Activo === 1 && String(user.Rol).toUpperCase() === 'CLIENTE')
 })
+
 const filteredUsers = computed(() => {
   const text = userSearch.value.trim().toLowerCase()
 
@@ -453,6 +501,10 @@ const selectedOrderTotal = computed(() => {
 
 const activeProducts = computed(() => {
   return productList.value.filter((product) => product.Activo === 1)
+})
+
+const orderAvailableProducts = computed(() => {
+  return productList.value.filter((product) => product.Activo === 1 && product.Stock > 0)
 })
 
 const inactiveProducts = computed(() => {
@@ -554,9 +606,28 @@ function getCategoryProductCount(idCategoria) {
   return productList.value.filter((product) => Number(product.idCategoria) === Number(idCategoria)).length
 }
 
+function formatAddress(address) {
+  if (!address) return ''
+
+  const floor = address.Piso ? `, Piso ${address.Piso}` : ''
+  const door = address.Puerta ? `, Puerta ${address.Puerta}` : ''
+  const city = address.Ciudad || address.Municipio || ''
+  const province = address.Provincia ? ` (${address.Provincia})` : ''
+  const cp = address.CP ? `${address.CP}, ` : ''
+
+  return `${address.Calle} ${address.Numero}${floor}${door}, ${cp}${city}${province}`.replace(/\s+/g, ' ').trim()
+}
+
 function updateCategoryParentFromSelected() {
   const category = getCategoryById(productForm.value.idCategoria)
   categoryParentId.value = category?.CategoriaPadre || null
+}
+
+function findPaymentMethodIdByName(name) {
+  if (!name) return ''
+
+  const method = activePaymentMethods.value.find((item) => item.Nombre.toLowerCase() === String(name).toLowerCase())
+  return method?.idMetodoPago || ''
 }
 
 function updateOrderLineProduct(line) {
@@ -575,11 +646,51 @@ function handleOrderPaymentMethodChange() {
   selectedOrder.value.MetodoPago = method?.Nombre || ''
 }
 
+function handleOrderAddressChange() {
+  if (!selectedOrder.value) return
+
+  const address = userAddresses.value.find((item) => Number(item.idDireccion) === Number(selectedOrder.value.idDireccion))
+  selectedOrder.value.DireccionEnvio = address ? formatAddress(address) : ''
+}
+
+async function handleOrderUserChange() {
+  if (!selectedOrder.value) return
+
+  const user = usersList.value.find((item) => Number(item.idUsuario) === Number(selectedOrder.value.idUsuario))
+
+  selectedOrder.value.idDireccion = ''
+  selectedOrder.value.DireccionEnvio = ''
+  userAddresses.value = []
+
+  if (!user) {
+    selectedOrder.value.Cliente = ''
+    selectedOrder.value.Email = ''
+    selectedOrder.value.Telefono = ''
+    return
+  }
+
+  selectedOrder.value.Cliente = `${user.Nombre} ${user.Apellido1 || ''}`.trim()
+  selectedOrder.value.Email = user.email
+  selectedOrder.value.Telefono = user.Telefono || ''
+
+  const addresses = await loadUserAddresses(user.idUsuario)
+  const defaultAddress = addresses.find((address) => address.Activo === 1) || addresses[0]
+
+  if (defaultAddress) {
+    selectedOrder.value.idDireccion = defaultAddress.idDireccion
+    selectedOrder.value.DireccionEnvio = formatAddress(defaultAddress)
+  }
+}
+
 function addOrderLine() {
   if (!selectedOrder.value) return
 
-  const firstProduct = productList.value[0]
-  if (!firstProduct) return
+  const firstProduct = orderAvailableProducts.value[0]
+
+  if (!firstProduct) {
+    showError('No hay productos activos con stock disponible para añadir al pedido.')
+    return
+  }
 
   selectedOrder.value.Productos.push({
     idLinea: `new-${Date.now()}`,
@@ -597,7 +708,7 @@ async function removeOrderLine(index) {
   if (!selectedOrder.value) return
 
   const line = selectedOrder.value.Productos[index]
-  
+
   if (!confirm(`¿Seguro que quieres eliminar la línea "${line?.Nombre || 'producto'}" del pedido?`)) return
 
   if (orderModalMode.value === 'edit' && line && !line._isNew) {
@@ -698,6 +809,36 @@ async function createCategoryIfNeeded() {
 async function saveProduct() {
   clearMessages()
 
+  if (!productForm.value.Nombre.trim()) {
+    showError('El nombre del producto es obligatorio.')
+    return
+  }
+
+  if (categoryMode.value === 'existing' && !productForm.value.idCategoria) {
+    showError('Selecciona una categoría para el producto.')
+    return
+  }
+
+  if (categoryMode.value === 'new' && !newCategoryName.value.trim()) {
+    showError('Introduce el nombre de la nueva categoría.')
+    return
+  }
+
+  if (Number(productForm.value.Precio) < 0 || Number(productForm.value.Stock) < 0) {
+    showError('El precio y el stock no pueden ser negativos.')
+    return
+  }
+
+  if (Number(productForm.value.iva) < 0 || Number(productForm.value.iva) >= 100) {
+    showError('El IVA debe ser mayor o igual a 0 y menor que 100.')
+    return
+  }
+
+  if (Number(productForm.value.Descuento) < 0 || Number(productForm.value.Descuento) > 100) {
+    showError('El descuento debe estar entre 0 y 100.')
+    return
+  }
+
   try {
     productForm.value.idCategoria = await createCategoryIfNeeded()
     const request = buildProductRequest()
@@ -715,23 +856,6 @@ async function saveProduct() {
   } catch (error) {
     showError('No se pudo guardar el producto.', error)
   }
-}
-
-function handleOrderUserChange() {
-  if (!selectedOrder.value) return
-
-  const user = usersList.value.find((item) => Number(item.idUsuario) === Number(selectedOrder.value.idUsuario))
-
-  if (!user) {
-    selectedOrder.value.Cliente = ''
-    selectedOrder.value.Email = ''
-    selectedOrder.value.Telefono = ''
-    return
-  }
-
-  selectedOrder.value.Cliente = `${user.Nombre} ${user.Apellido1 || ''}`.trim()
-  selectedOrder.value.Email = user.email
-  selectedOrder.value.Telefono = user.Telefono || ''
 }
 
 async function handleDeleteProduct(product) {
@@ -787,7 +911,10 @@ async function saveCategory() {
     CategoriaPadre: categoryForm.value.CategoriaPadre ? Number(categoryForm.value.CategoriaPadre) : null
   }
 
-  if (!categoryData.Nombre) return
+  if (!categoryData.Nombre) {
+    showError('El nombre de la categoría es obligatorio.')
+    return
+  }
 
   try {
     if (categoryModalMode.value === 'create') {
@@ -821,11 +948,14 @@ async function handleDeleteCategory(category) {
 
 async function openNewOrderModal() {
   clearMessages()
+  userAddresses.value = []
+  userAddressesError.value = ''
 
   if (usersList.value.length === 0) await loadUsers()
   if (productList.value.length === 0) await loadProducts()
   if (paymentMethods.value.length === 0) await loadPaymentMethods()
-  const firstProduct = productList.value[0]
+
+  const firstProduct = orderAvailableProducts.value[0]
   const firstPaymentMethod = activePaymentMethods.value[0] || null
 
   orderModalMode.value = 'create'
@@ -836,7 +966,7 @@ async function openNewOrderModal() {
     idUsuario: '',
     idDireccion: '',
     idMetodoPago: firstPaymentMethod?.idMetodoPago || '',
-    Cliente: 'Nuevo cliente',
+    Cliente: '',
     Email: '',
     Telefono: '',
     DireccionEnvio: '',
@@ -868,9 +998,13 @@ async function openOrderModal(order) {
   orderDetailError.value = ''
   orderDetailLoading.value = true
   orderModalMode.value = 'edit'
+  userAddresses.value = []
+
+  if (paymentMethods.value.length === 0) await loadPaymentMethods()
 
   selectedOrder.value = {
     ...order,
+    idMetodoPago: order.idMetodoPago || findPaymentMethodIdByName(order.MetodoPago),
     Productos: []
   }
 
@@ -885,6 +1019,8 @@ async function openOrderModal(order) {
       TotalConIVA: normalizeNumber(getFirstValue(detail, ['totalConIVA'], selectedOrder.value.TotalConIVA)),
       Productos: asArray(getFirstValue(detail, ['lineas'], [])).map(normalizeOrderLine)
     }
+
+    handleOrderPaymentMethodChange()
   } catch (error) {
     orderDetailError.value = 'No se pudo cargar el detalle del pedido.'
     console.error('Error cargando detalle pedido:', error)
@@ -896,6 +1032,46 @@ async function openOrderModal(order) {
 function closeOrderModal() {
   orderModalOpen.value = false
   selectedOrder.value = null
+  userAddresses.value = []
+  userAddressesError.value = ''
+}
+
+function validateOrderLines() {
+  for (const line of selectedOrder.value.Productos) {
+    const product = productList.value.find((item) => Number(item.idProducto) === Number(line.idProducto))
+
+    if (!line.idProducto) {
+      showError('Todas las líneas deben tener un producto seleccionado.')
+      return false
+    }
+
+    if (!product) {
+      showError('Uno de los productos seleccionados no existe.')
+      return false
+    }
+
+    if (Number(line.Cantidad) < 1) {
+      showError('La cantidad de cada línea debe ser mayor o igual a 1.')
+      return false
+    }
+
+    if (Number(line.PrecioUnitario_SinIVA) < 0) {
+      showError('El precio de cada línea no puede ser negativo.')
+      return false
+    }
+
+    if (Number(line.IVA) < 0 || Number(line.IVA) >= 100) {
+      showError('El IVA de cada línea debe ser mayor o igual a 0 y menor que 100.')
+      return false
+    }
+
+    if ((orderModalMode.value === 'create' || line._isNew) && Number(line.Cantidad) > Number(product.Stock)) {
+      showError(`No hay stock suficiente para "${product.Nombre}". Stock disponible: ${product.Stock}.`)
+      return false
+    }
+  }
+
+  return true
 }
 
 async function saveOrderChanges() {
@@ -915,7 +1091,7 @@ async function saveOrderChanges() {
     }
 
     if (!selectedOrder.value.idDireccion) {
-      showError('Este pedido necesita una dirección. Si el cliente no tiene dirección, primero debe crear una dirección en su cuenta.')
+      showError('Selecciona una dirección del cliente para crear el pedido.')
       return
     }
 
@@ -925,12 +1101,14 @@ async function saveOrderChanges() {
     }
   }
 
+  if (!validateOrderLines()) return
+
   try {
     if (orderModalMode.value === 'create') {
       await createAdminOrder(buildOrderRequest(selectedOrder.value))
       showMessage('Pedido creado correctamente.')
       closeOrderModal()
-      await loadOrders()
+      await Promise.all([loadOrders(), loadProducts(), loadStockAlerts()])
       return
     }
 
@@ -950,7 +1128,7 @@ async function saveOrderChanges() {
 
     showMessage('Pedido actualizado correctamente.')
     closeOrderModal()
-    await loadOrders()
+    await Promise.all([loadOrders(), loadProducts(), loadStockAlerts()])
   } catch (error) {
     showError('No se pudo guardar el pedido.', error)
   }
@@ -1394,7 +1572,7 @@ onMounted(() => {
             <input v-model="newCategoryName" type="text" placeholder="Nombre de la nueva categoría" />
           </label>
 
-          <label>
+          <label v-if="categoryMode === 'new'">
             <span>Categoría padre</span>
             <select v-model="categoryParentId">
               <option :value="null">Sin categoría padre</option>
@@ -1501,11 +1679,27 @@ onMounted(() => {
                 ID {{ user.idUsuario }} - {{ user.Nombre }} {{ user.Apellido1 }} - {{ user.email }}
               </option>
             </select>
+            <small v-if="usersLoading">Cargando usuarios...</small>
+            <small v-else-if="clientUsersForOrders.length === 0">No hay clientes activos disponibles.</small>
           </label>
 
-          <label class="admin-order-detail-field">
-            <span>ID dirección</span>
-            <input v-model="selectedOrder.idDireccion" type="number" :disabled="orderModalMode === 'edit'" />
+          <label v-if="orderModalMode === 'create'" class="admin-order-detail-field">
+            <span>Dirección</span>
+            <select v-model="selectedOrder.idDireccion" :disabled="!selectedOrder.idUsuario || userAddressesLoading" @change="handleOrderAddressChange">
+              <option value="">Selecciona dirección</option>
+              <option v-for="address in userAddresses" :key="address.idDireccion" :value="address.idDireccion">
+                ID {{ address.idDireccion }} - {{ formatAddress(address) }}
+              </option>
+            </select>
+            <small v-if="!selectedOrder.idUsuario">Selecciona primero un usuario.</small>
+            <small v-else-if="userAddressesLoading">Cargando direcciones...</small>
+            <small v-else-if="userAddressesError">{{ userAddressesError }}</small>
+            <small v-else-if="userAddresses.length === 0">Este cliente no tiene direcciones registradas.</small>
+          </label>
+
+          <label v-else class="admin-order-detail-field">
+            <span>Dirección</span>
+            <input v-model="selectedOrder.DireccionEnvio" type="text" disabled />
           </label>
 
           <label class="admin-order-detail-field">
@@ -1528,6 +1722,11 @@ onMounted(() => {
           <label class="admin-order-detail-field">
             <span>Email</span>
             <input v-model="selectedOrder.Email" type="email" disabled />
+          </label>
+
+          <label class="admin-order-detail-field">
+            <span>Teléfono</span>
+            <input v-model="selectedOrder.Telefono" type="text" disabled />
           </label>
 
           <label class="admin-order-detail-field">
@@ -1574,8 +1773,8 @@ onMounted(() => {
               <label>
                 <span>Producto</span>
                 <select v-model="product.idProducto" :disabled="orderModalMode === 'edit' && !product._isNew" @change="updateOrderLineProduct(product)">
-                  <option v-for="item in productList" :key="item.idProducto" :value="item.idProducto">
-                    {{ item.Nombre }}
+                  <option v-for="item in orderAvailableProducts" :key="item.idProducto" :value="item.idProducto">
+                    {{ item.Nombre }} - Stock {{ item.Stock }}
                   </option>
                 </select>
               </label>

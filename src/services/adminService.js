@@ -26,6 +26,10 @@ export async function getAdminUsers(search = '') {
   return apiRequest(`/admin/usuarios/${buildQuery({ search })}`)
 }
 
+export async function getAdminUserAddresses(idUsuario) {
+  return apiRequest(`/admin/usuarios/${idUsuario}/direcciones`)
+}
+
 export async function getAdminProducts(search = '') {
   return apiRequest(`/admin/productos/${buildQuery({ search })}`)
 }
