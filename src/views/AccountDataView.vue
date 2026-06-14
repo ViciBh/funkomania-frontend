@@ -1,16 +1,44 @@
 <script setup>
-import { User, MapPin, CreditCard } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { User } from 'lucide-vue-next'
+import { getUserProfile } from '@/services/userService'
+
+const user = ref(null)
+const loading = ref(true)
+const errorMessage = ref('')
+
+async function loadProfile() {
+  try {
+    user.value = await getUserProfile()
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'No se pudo cargar el perfil del usuario'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+})
 </script>
 
 <template>
   <main class="account-page">
     <section class="account-header">
       <h1>Mi Cuenta</h1>
-      <p>Gestiona tus datos personales y métodos de pago.</p>
+      <p>Consulta y gestiona tu información personal.</p>
     </section>
 
-    <section class="account-content">
+    <section v-if="loading" class="account-content">
+      <p>Cargando perfil...</p>
+    </section>
 
+    <section v-else-if="errorMessage" class="account-content">
+      <p>{{ errorMessage }}</p>
+    </section>
+
+    <section v-else-if="user" class="account-content">
       <div class="account-card">
         <div class="card-title">
           <User :size="22" />
@@ -18,44 +46,24 @@ import { User, MapPin, CreditCard } from 'lucide-vue-next'
         </div>
 
         <div class="card-body">
-          <p><strong>Nombre:</strong> Iván</p>
-          <p><strong>Apellidos:</strong> Rodríguez</p>
-          <p><strong>Email:</strong> ivan@email.com</p>
-          <p><strong>Teléfono:</strong> 600 123 456</p>
+          <p><strong>Nombre:</strong> {{ user.nombre }}</p>
+          <p><strong>Apellidos:</strong> {{ user.apellidos }}</p>
+          <p><strong>Email:</strong> {{ user.email }}</p>
+          <p><strong>Teléfono:</strong> {{ user.telefono || 'No especificado' }}</p>
+          <p><strong>Dirección principal:</strong> {{ user.direccionPrincipal || 'No especificada' }}</p>
+          <p>
+            <strong>Fecha de registro:</strong>
+            {{ user.fechaRegistro ? new Date(user.fechaRegistro).toLocaleDateString('es-ES') : 'No disponible' }}
+          </p>
+          <p><strong>Pedidos realizados:</strong> {{ user.cantidadPedidos }}</p>
+          <p><strong>Total gastado:</strong> {{ Number(user.totalGastado || 0).toFixed(2) }} €</p>
         </div>
       </div>
-
-      <div class="account-card">
-        <div class="card-title">
-          <MapPin :size="22" />
-          <h2>Dirección</h2>
-        </div>
-
-        <div class="card-body">
-          <p>Calle Principal 12</p>
-          <p>28001 Madrid</p>
-          <p>España</p>
-        </div>
-      </div>
-
-      <div class="account-card full-width">
-        <div class="card-title">
-          <CreditCard :size="22" />
-          <h2>Métodos de pago</h2>
-        </div>
-
-        <div class="card-body">
-          <p>Visa **** **** **** 1234</p>
-          <p>Caducidad: 12/28</p>
-        </div>
-      </div>
-
     </section>
   </main>
 </template>
 
-<style scoped>
-.account-page {
+<style scoped>.account-page {
   max-width: 1200px;
   margin: auto;
   padding: 40px 20px;
@@ -99,5 +107,4 @@ import { User, MapPin, CreditCard } from 'lucide-vue-next'
 
 .card-body p {
   margin-bottom: 10px;
-}
-</style>
+}</style>
