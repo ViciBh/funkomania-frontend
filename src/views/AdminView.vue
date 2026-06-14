@@ -11,6 +11,7 @@ import { AlertTriangle, BadgePercent, Boxes, ChevronLeft, ChevronRight, Edit, Ey
 import { useAuth } from '@/composables/useAuth'
 import { getProductImage } from '@/data/products'
 import { getAdminStockAlerts, getAdminUsers, getAdminUserAddresses, getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminOrders, getAdminOrderDetail, createAdminOrder, updateAdminOrder, addAdminOrderLine, updateAdminOrderLine, deleteAdminOrderLine, getPaymentMethods } from '@/services/adminService'
+import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
 const { authUser, clearAuthUser } = useAuth()
@@ -795,11 +796,37 @@ function closeProductModal() {
   productModalOpen.value = false
 }
 
-function handleProductImageUpload(event) {
+async function handleProductImageUpload(event){
   const file = event.target.files?.[0]
+
   if (!file) return
+  try{
+    const fileName = `${Date.now()}-${file.name}`
+
+    const { error } = await supabase
+      .storage
+      .from('productos')
+      .upload(fileName, file)
+
+    if (error) {
+      throw error
+    }
+
+    const { data } = supabase
+      .storage
+      .from('productos')
+      .getPublicUrl(fileName)
+    
+    productForm.value.Image = data.getPublicUrl
+
+    showMesaage('Imagen subida correctamente.')
+
+  } catch (error) {
+    console.error(error)
+    showError('Error al subir la imagen.')
+  }
+
   event.target.value = ''
-  showError('La subida real de imágenes no está implementada. Introduce el nombre del archivo o una URL en "Ruta imagen".')
 }
 
 async function createCategoryIfNeeded() {
