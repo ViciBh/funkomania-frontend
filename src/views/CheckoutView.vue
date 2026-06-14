@@ -14,12 +14,16 @@ import { getProductImage } from '@/data/products'
 import { getPaymentMethods } from '@/services/paymentService'
 import { createUserAddress, getUserAddresses } from '@/services/addressService'
 import { createOrderFromCart } from '@/services/orderService'
+import { getUserProfile, updateUserProfile } from '@/services/userService'
 
 const cart = getCart()
 const { authUser } = useAuth()
 const paymentMethods = ref([])
 const paymentMethodsLoading = ref(false)
 const paymentMethodsError = ref('')
+const profileLoading = ref(false)
+const profileSaving = ref(false)
+const profileMessage = ref('')
 const addressSaving = ref(false)
 const savedAddress = ref(null)
 const savedAddressSnapshot = ref(null)
@@ -65,11 +69,15 @@ const selectedPaymentMethod = computed(() => {
 })
 
 function normalizePhone(phone) {
-  return phone.replace(/\s/g, '')
+  return String(phone || '').replace(/\s/g, '')
 }
 
 function normalizeCardNumber(number) {
-  return number.replace(/\s/g, '')
+  return String(number || '').replace(/\s/g, '')
+}
+
+function normalizeNameValue(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 50)
 }
 
 function normalizeAddressValue(value) {
@@ -104,11 +112,11 @@ function isSameAddressData(addressA, addressB) {
 }
 
 function isNameValid(value) {
-  return /^[A-Za-zÀ-ÿ\s'-]{2,50}$/.test(value.trim())
+  return /^[A-Za-zÀ-ÿ\s'-]{2,50}$/.test(String(value || '').trim())
 }
 
 function isEmailValid(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
 }
 
 function isPhoneValid(value) {
@@ -116,23 +124,23 @@ function isPhoneValid(value) {
 }
 
 function isPostalCodeValid(value) {
-  return /^\d{5}$/.test(value.trim())
+  return /^\d{5}$/.test(String(value || '').trim())
 }
 
 function isAddressTextValid(value) {
-  return /^[A-Za-zÀ-ÿ0-9\sºª.,'-]{2,120}$/.test(value.trim())
+  return /^[A-Za-zÀ-ÿ0-9\sºª.,'-]{2,120}$/.test(String(value || '').trim())
 }
 
 function isCityTextValid(value) {
-  return /^[A-Za-zÀ-ÿ\s'-]{2,100}$/.test(value.trim())
+  return /^[A-Za-zÀ-ÿ\s'-]{2,100}$/.test(String(value || '').trim())
 }
 
 function isAddressNumberValid(value) {
-  return /^[A-Za-z0-9ºª/-]{1,10}$/.test(value.trim())
+  return /^[A-Za-z0-9ºª/-]{1,10}$/.test(String(value || '').trim())
 }
 
 function isExpiryDateValid(value) {
-  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) return false
+  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(String(value || ''))) return false
   const [month, year] = value.split('/')
   const expiryMonth = Number(month)
   const expiryYear = 2000 + Number(year)
@@ -206,11 +214,36 @@ const canConfirmOrder = computed(() => {
     isAddressSaved.value &&
     selectedPaymentMethodId.value &&
     isPaymentFormValid.value &&
+    !profileSaving.value &&
     !orderCreating.value
 })
 
 function showError(value, isValid) {
   return value && !isValid
+}
+
+function showRequiredError(value, isValid) {
+  return !String(value || '').trim() || (value && !isValid)
+}
+
+function splitProfileLastNames(profile) {
+  const apellido1 = profile?.Apellido1 || profile?.apellido1 || ''
+  const apellido2 = profile?.Apellido2 || profile?.apellido2 || ''
+
+  if (apellido1 || apellido2) {
+    return {
+      Apellido1: apellido1,
+      Apellido2: apellido2
+    }
+  }
+
+  const apellidos = profile?.Apellidos || profile?.apellidos || ''
+  const parts = String(apellidos || '').trim().split(/\s+/).filter(Boolean)
+
+  return {
+    Apellido1: parts[0] || '',
+    Apellido2: parts.slice(1).join(' ')
+  }
 }
 
 function fillAddressForm(address) {
@@ -224,6 +257,83 @@ function fillAddressForm(address) {
     Municipio: address?.Municipio || '',
     Provincia: address?.Provincia || '',
     CP: address?.CP || ''
+  }
+}
+
+async function loadUserProfile() {
+  profileLoading.value = true
+  profileMessage.value = ''
+
+  try {
+    const profile = await getUserProfile()
+    const lastNames = splitProfileLastNames(profile)
+
+    personalForm.value.Nombre = profile?.Nombre || profile?.nombre || profile?.name || authUser.value.name || ''
+    personalForm.value.Apellido1 = lastNames.Apellido1
+    personalForm.value.Apellido2 = lastNames.Apellido2
+    personalForm.value.email = profile?.email || profile?.Email || authUser.value.username || ''
+    personalForm.value.Telefono = profile?.Telefono || profile?.telefono || ''
+
+    if (personalForm.value.Nombre || personalForm.value.Telefono) {
+      profileMessage.value = 'Se han cargado tus datos guardados. Puedes modificarlos antes de confirmar el pedido.'
+    }
+  } catch (error) {
+    personalForm.value.Nombre = authUser.value.name || personalForm.value.Nombre
+    personalForm.value.email = authUser.value.username || personalForm.value.email
+    profileMessage.value = 'No se pudieron cargar todos los datos del perfil. Puedes completarlos manualmente.'
+    console.error('Error cargando perfil de usuario:', error)
+  } finally {
+    profileLoading.value = false
+  }
+}
+
+function normalizePersonalForm() {
+  personalForm.value.Nombre = normalizeNameValue(personalForm.value.Nombre)
+  personalForm.value.Apellido1 = normalizeNameValue(personalForm.value.Apellido1)
+  personalForm.value.Apellido2 = normalizeNameValue(personalForm.value.Apellido2)
+  personalForm.value.email = String(personalForm.value.email || '').trim()
+  personalForm.value.Telefono = normalizePhone(personalForm.value.Telefono)
+}
+
+async function saveUserProfile(showMessage = false) {
+  normalizePersonalForm()
+
+  if (!isPersonalFormValid.value) {
+    if (showMessage) {
+      profileMessage.value = 'Revisa los datos personales. El nombre, el primer apellido, el email y el teléfono son obligatorios y deben tener un formato válido.'
+    }
+    return false
+  }
+
+  profileSaving.value = true
+
+  try {
+    await updateUserProfile({
+      nombre: personalForm.value.Nombre,
+      apellido1: personalForm.value.Apellido1,
+      apellido2: personalForm.value.Apellido2,
+      telefono: personalForm.value.Telefono
+    })
+
+    if (showMessage) {
+      profileMessage.value = 'Datos personales actualizados correctamente.'
+    }
+
+    return true
+  } catch (error) {
+    if (showMessage) {
+      profileMessage.value = 'No se pudieron actualizar los datos personales. Inténtalo de nuevo.'
+    }
+    console.error('Error actualizando perfil de usuario:', error)
+    return false
+  } finally {
+    profileSaving.value = false
+  }
+}
+
+async function saveUserProfileOnBlur() {
+  if (isPersonalFormValid.value) {
+    await saveUserProfile(false)
   }
 }
 
@@ -343,7 +453,7 @@ function simulatePayment() {
   if (!isPersonalFormValid.value) {
     return {
       success: false,
-      message: 'Revisa la información personal. El nombre, apellidos, email y teléfono deben tener un formato válido.'
+      message: 'Revisa la información personal. El nombre, primer apellido, email y teléfono deben tener un formato válido.'
     }
   }
 
@@ -431,6 +541,13 @@ async function confirmOrder() {
     return
   }
 
+  const profileSaved = await saveUserProfile(true)
+
+  if (!profileSaved) {
+    paymentMessage.value = 'No se pudo actualizar la información personal antes de crear el pedido.'
+    return
+  }
+
   orderCreating.value = true
   paymentMessage.value = ''
 
@@ -454,6 +571,7 @@ async function confirmOrder() {
 }
 
 onMounted(() => {
+  loadUserProfile()
   loadPaymentMethods()
   loadLastActiveAddress()
 })
@@ -477,22 +595,25 @@ onMounted(() => {
             <h1>Información personal</h1>
           </div>
 
+          <p v-if="profileLoading" class="checkout-message">Cargando datos personales...</p>
+          <p v-if="profileMessage" class="checkout-message">{{ profileMessage }}</p>
+
           <div class="checkout-personal-data">
             <label>
               <span>Nombre</span>
-              <input v-model="personalForm.Nombre" type="text" :class="{ 'checkout-input-error': showError(personalForm.Nombre, isNombreValid) }" />
-              <small v-if="showError(personalForm.Nombre, isNombreValid)" class="checkout-field-error">El nombre debe contener solo letras y mínimo 2 caracteres.</small>
+              <input v-model="personalForm.Nombre" type="text" maxlength="50" :class="{ 'checkout-input-error': showRequiredError(personalForm.Nombre, isNombreValid) }" @blur="saveUserProfileOnBlur" />
+              <small v-if="showRequiredError(personalForm.Nombre, isNombreValid)" class="checkout-field-error">El nombre es obligatorio y debe contener solo letras y mínimo 2 caracteres.</small>
             </label>
 
             <label>
               <span>Primer apellido</span>
-              <input v-model="personalForm.Apellido1" type="text" :class="{ 'checkout-input-error': showError(personalForm.Apellido1, isApellido1Valid) }" />
-              <small v-if="showError(personalForm.Apellido1, isApellido1Valid)" class="checkout-field-error">El primer apellido debe contener solo letras y mínimo 2 caracteres.</small>
+              <input v-model="personalForm.Apellido1" type="text" maxlength="50" required :class="{ 'checkout-input-error': showRequiredError(personalForm.Apellido1, isApellido1Valid) }" @blur="saveUserProfileOnBlur" />
+              <small v-if="showRequiredError(personalForm.Apellido1, isApellido1Valid)" class="checkout-field-error">El primer apellido es obligatorio y debe contener solo letras y mínimo 2 caracteres.</small>
             </label>
 
             <label>
               <span>Segundo apellido</span>
-              <input v-model="personalForm.Apellido2" type="text" :class="{ 'checkout-input-error': showError(personalForm.Apellido2, isApellido2Valid) }" />
+              <input v-model="personalForm.Apellido2" type="text" maxlength="50" :class="{ 'checkout-input-error': showError(personalForm.Apellido2, isApellido2Valid) }" @blur="saveUserProfileOnBlur" />
               <small v-if="showError(personalForm.Apellido2, isApellido2Valid)" class="checkout-field-error">El segundo apellido debe contener solo letras.</small>
             </label>
 
@@ -504,8 +625,8 @@ onMounted(() => {
 
             <label>
               <span>Teléfono</span>
-              <input v-model="personalForm.Telefono" type="text" placeholder="Ej. 600123456 o +34600123456" :class="{ 'checkout-input-error': showError(personalForm.Telefono, isTelefonoValid) }" />
-              <small v-if="showError(personalForm.Telefono, isTelefonoValid)" class="checkout-field-error">El teléfono debe tener 9 dígitos o formato +34 seguido de 9 dígitos.</small>
+              <input v-model="personalForm.Telefono" type="text" placeholder="Ej. 600123456 o +34600123456" :class="{ 'checkout-input-error': showRequiredError(personalForm.Telefono, isTelefonoValid) }" @blur="saveUserProfileOnBlur" />
+              <small v-if="showRequiredError(personalForm.Telefono, isTelefonoValid)" class="checkout-field-error">El teléfono es obligatorio y debe tener 9 dígitos o formato +34 seguido de 9 dígitos.</small>
             </label>
           </div>
         </section>
@@ -695,7 +816,7 @@ onMounted(() => {
         <p v-if="paymentMessage" class="checkout-message">{{ paymentMessage }}</p>
 
         <button class="checkout-confirm-button" type="button" :disabled="!canConfirmOrder" @click="confirmOrder">
-          {{ orderCreating ? 'Creando pedido...' : 'Comprar' }}
+          {{ orderCreating ? 'Creando pedido...' : profileSaving ? 'Actualizando datos...' : 'Comprar' }}
         </button>
 
         <RouterLink to="/carrito" class="checkout-back-cart">Volver al carrito</RouterLink>

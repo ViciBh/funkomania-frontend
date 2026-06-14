@@ -6,7 +6,7 @@
  * @author Viktoriia Bohoslavska
  */
 
-const API_URL = ''
+const API_URL = import.meta.env.VITE_API_URL || '/api'
 /**
  * Obtiene el token de autenticación guardado en localStorage.
  *

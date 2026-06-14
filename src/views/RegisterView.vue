@@ -16,6 +16,36 @@ const password = ref('')
 const confirmPassword = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
+const nameRegex = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'-]{2,50}$/
+/**
+ * Normaliza el nombre eliminando espacios repetidos y limitando longitud.
+ */
+function normalizeName(value) {
+  return value.replace(/\s+/g, ' ').trim().slice(0, 50)
+}
+/**
+ * Limita los caracteres del campo nombre durante la escritura.
+ * Permite letras, espacios, guion y apóstrofe.
+ */
+function handleNameInput() {
+  nombre.value = nombre.value.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s'-]/g, '').slice(0, 50)
+}
+/**
+ * Valida el nombre del usuario antes de enviar el formulario.
+ */
+function validateName() {
+  const cleanName = normalizeName(nombre.value)
+  if (!cleanName) {
+    errorMessage.value = 'Introduce tu nombre'
+    return false
+  }
+  if (!nameRegex.test(cleanName)) {
+    errorMessage.value = 'El nombre debe tener entre 2 y 50 caracteres y solo puede contener letras'
+    return false
+  }
+  nombre.value = cleanName
+  return true
+}
 
 /**
  * Gestiona el envío del formulario de registro.
@@ -29,6 +59,7 @@ async function handleRegister() {
     errorMessage.value = 'Completa los campos obligatorios'
     return
   }
+  if (!validateName()) return
   if (password.value !== confirmPassword.value) {
     errorMessage.value = 'Las contraseñas no coinciden'
     return
@@ -39,7 +70,7 @@ async function handleRegister() {
      * El backend espera los campos: email, password y nombre.
      */
     await registerUser({
-      email: email.value,
+      email: email.value.trim(),
       password: password.value,
       nombre: nombre.value
     })
@@ -51,7 +82,7 @@ async function handleRegister() {
      */
     router.push('/login')
   } catch (error) {
-    errorMessage.value = 'No se pudo crear la cuenta'
+    errorMessage.value = error.message || 'No se pudo crear la cuenta'
     console.error('Error registro:', error)
   }
 }
@@ -69,7 +100,7 @@ async function handleRegister() {
 
         <label class="login-field">
           <span>Nombre</span>
-          <input v-model="nombre" type="text" placeholder="Introduce tu nombre" required />
+          <input v-model="nombre" type="text" placeholder="Introduce tu nombre" maxlength="50" required @input="handleNameInput" />
         </label>
 
         <label class="login-field">

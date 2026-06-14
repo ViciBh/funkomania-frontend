@@ -11,37 +11,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/auth': {
+      '/api': {
         target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/productos': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/categorias': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/usuario': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/metodos-pago': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/carrito': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/pedidos': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      },
-      '/admin': {
-        target: 'http://localhost:8080',
-        changeOrigin: true}
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
     }
   }
 })
