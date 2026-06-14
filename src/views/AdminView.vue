@@ -119,8 +119,21 @@ function showMessage(message) {
   globalError.value = ''
 }
 
+function getErrorMessage(error) {
+  if (!error) return ''
+  if (error.message && !error.message.startsWith('{')) {
+    return error.message
+  }
+  if (error.data?.detail) return error.data.detail
+  if (error.data?.message) return error.data.message
+  if (error.data?.error) return error.data.error
+
+  return ''
+}
+
 function showError(message, error = null) {
-  globalError.value = message
+  const detail = getErrorMessage(error)
+  globalError.value = detail && detail !== message ? `${message} ${detail}` : message
   globalMessage.value = ''
   if (error) {
     console.error(message, error)
@@ -1704,7 +1717,7 @@ onMounted(() => {
 
           <label class="admin-order-detail-field">
             <span>Método de pago</span>
-            <select v-model="selectedOrder.idMetodoPago" @change="handleOrderPaymentMethodChange">
+            <select v-model="selectedOrder.idMetodoPago" :disabled="orderModalMode === 'edit'" @change="handleOrderPaymentMethodChange">
               <option value="">Selecciona método</option>
               <option v-for="method in activePaymentMethods" :key="method.idMetodoPago" :value="method.idMetodoPago">
                 ID {{ method.idMetodoPago }} - {{ method.Nombre }}
@@ -1712,6 +1725,7 @@ onMounted(() => {
             </select>
             <small v-if="paymentMethodsLoading">Cargando métodos...</small>
             <small v-else-if="paymentMethodsError">{{ paymentMethodsError }}</small>
+            <small v-else-if="orderModalMode === 'edit'">El método de pago no se modifica desde esta vista.</small>
           </label>
 
           <label class="admin-order-detail-field">

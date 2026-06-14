@@ -32,6 +32,32 @@ export function removeToken() {
   localStorage.removeItem('token')
 }
 
+async function readResponseBody(response) {
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    try {
+      return await response.json()
+    } catch {
+      return null
+    }
+  }
+  const text = await response.text()
+  return text || null
+}
+
+function getBackendErrorMessage(data, status) {
+  if (!data) return `Error HTTP ${status}`
+
+  if (typeof data === 'string') {
+    return data
+  }
+  return data.detail ||
+    data.message ||
+    data.error ||
+    data.title ||
+    `Error HTTP ${status}`
+}
+
 /**
  * Ejecuta una petición HTTP contra la API backend.
  * Añade automáticamente las cabeceras JSON y el token Bearer si existe.
@@ -51,16 +77,13 @@ export async function apiRequest(endpoint, options = {}) {
       ...(options.headers || {})
     }
   })
-
+  const data = await readResponseBody(response)
   if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(errorText || 'Error en la petición')
+    const error = new Error(getBackendErrorMessage(data, response.status))
+    error.status = response.status
+    error.data = data
+    throw error
   }
 
-  const contentType = response.headers.get('content-type')
-  if (contentType && contentType.includes('application/json')) {
-    return response.json()
-  }
-
-  return null
+  return data
 }
