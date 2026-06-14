@@ -12,7 +12,7 @@ import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
-const { setAuthUser } = useAuth()
+const { setAuthUser, isAdmin } = useAuth()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -29,20 +29,15 @@ async function handleLogin() {
   }
   loading.value = true
   try {
-    /**
-     * Petición al backend.
-     * El backend espera los campos: username y password.
-     * En el frontend usamos el campo email, pero lo enviamos como username.
-     */
     const user = await loginUser({
       username: email.value,
       password: password.value
     })
-    /**
-     * Si el login es correcto, se guarda el estado de autenticación y se redirige al usuario a la página solicitada o a inicio.
-     */
     setAuthUser(user)
-    console.log('Login correcto:', user)
+    if (isAdmin.value) {
+      router.push('/admin')
+      return
+    }
     router.push(route.query.redirect || '/')
   } catch (error) {
     errorMessage.value = 'Email o contraseña incorrectos'

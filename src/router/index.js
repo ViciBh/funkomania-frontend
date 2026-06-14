@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
+import { useAuth } from '@/composables/useAuth'
 import HomeView from '../views/HomeView.vue'
 import CatalogView from '../views/CatalogView.vue'
 import CategoriesView from '../views/CategoriesView.vue'
@@ -69,7 +69,8 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: AdminView
+    component: AdminView,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/cuenta-datos',
@@ -89,10 +90,16 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  if (to.meta.requiresAuth && !localStorage.getItem('token')) {
+  const { isAuthenticated, isAdmin } = useAuth()
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
     return {
       path: '/login',
       query: { redirect: to.fullPath }
+    }
+  }
+  if (to.meta.requiresAdmin && !isAdmin.value) {
+    return {
+      path: '/'
     }
   }
 })

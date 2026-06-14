@@ -18,11 +18,13 @@ const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
 const isNotificationsOpen = ref(false)
-const { authUser, isAuthenticated, clearAuthUser, getLoginRedirect } = useAuth()
+const { authUser, isAuthenticated, isAdmin, clearAuthUser, getLoginRedirect } = useAuth()
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
 })
-
+const homeRoute = computed(() => {
+  return isAdmin.value ? '/admin' : '/'
+})
 const wishlistRoute = computed(() => {
   return isAuthenticated.value ? '/lista-deseos' : getLoginRedirect('/lista-deseos')
 })
@@ -86,11 +88,11 @@ watch(isAuthenticated, (authenticated) => {
   <div class="page">
     <header v-if="!isAdminRoute" class="site-header">
       <div class="header-inner">
-        <RouterLink to="/" class="logo" @click="closeMobileMenu">
+        <RouterLink :to="homeRoute" class="logo" @click="closeMobileMenu">
           <img src="./assets/logo.svg" alt="Funkomanía" class="logo-img" />
         </RouterLink>
         <nav class="main-nav">
-          <RouterLink to="/">Inicio</RouterLink>
+          <RouterLink :to="homeRoute">Inicio</RouterLink>
           <RouterLink to="/catalogo">Catálogo</RouterLink>
           <RouterLink to="/categorias">Categorías</RouterLink>
           <RouterLink to="/ofertas">Ofertas</RouterLink>
@@ -148,7 +150,7 @@ watch(isAuthenticated, (authenticated) => {
         </div>
       </div>
       <nav class="mobile-nav" :class="{ 'mobile-nav-open': isMobileMenuOpen }">
-        <RouterLink to="/" @click="closeMobileMenu">Inicio</RouterLink>
+        <RouterLink :to="homeRoute" @click="closeMobileMenu">Inicio</RouterLink>
         <RouterLink to="/catalogo" @click="closeMobileMenu">Catálogo</RouterLink>
         <RouterLink to="/categorias" @click="closeMobileMenu">Categorías</RouterLink>
         <RouterLink to="/ofertas" @click="closeMobileMenu">Ofertas</RouterLink>

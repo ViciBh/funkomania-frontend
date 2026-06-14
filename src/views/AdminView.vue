@@ -6,11 +6,16 @@
  */
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
+import { clearNotifications } from '@/composables/useNotifications'
 import { AlertTriangle, BadgePercent, Boxes, ChevronLeft, ChevronRight, Edit, Eye, ImagePlus, LogOut, PackagePlus, PackageSearch, Plus, Save, Search, ShieldCheck, ShoppingBag, Trash2, UserRound, X } from 'lucide-vue-next'
 import { products, categories, productosOfertas, adminAlertasStock, getProductImage } from '@/data/products'
 import { mockAdmin, getClientUsers, mockOrders, getOrderDetails } from '@/data/admin'
 
 const activeSection = ref('datos')
+const router = useRouter()
+const { clearAuthUser } = useAuth()
 const summaryOpen = ref(false)
 const userSearch = ref('')
 const productSearch = ref('')
@@ -605,6 +610,12 @@ function saveOrderChanges() {
 
   closeOrderModal()
 }
+
+function handleLogout() {
+  clearAuthUser()
+  clearNotifications()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -640,7 +651,7 @@ function saveOrderChanges() {
         <button class="admin-menu-button" :class="{ 'admin-menu-button-active': activeSection === 'categorias' }" type="button" @click="setSection('categorias')">Categorías</button>
         <button class="admin-menu-button" :class="{ 'admin-menu-button-active': activeSection === 'pedidos' }" type="button" @click="setSection('pedidos')">Pedidos</button>
 
-        <button class="admin-logout-button" type="button">
+        <button class="admin-logout-button" type="button"  @click="handleLogout">
           <LogOut :size="18" :stroke-width="2.4" />
           Cerrar sesión
         </button>
