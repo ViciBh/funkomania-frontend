@@ -654,3 +654,20 @@ button {
     display: none;
   }
 }
+
+.admin-alerts-wrap {
+  position: relative;
+}
+
+.admin-alerts-dropdown {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: min(360px, 90vw);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(28, 31, 44, 0.16);
+  padding: 1rem;
+  z-index: 40;
+}

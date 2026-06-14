@@ -5,141 +5,399 @@
  * @author Viktoriia Bohoslavska
  */
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-import { clearNotifications } from '@/composables/useNotifications'
 import { AlertTriangle, BadgePercent, Boxes, ChevronLeft, ChevronRight, Edit, Eye, ImagePlus, LogOut, PackagePlus, PackageSearch, Plus, Save, Search, ShieldCheck, ShoppingBag, Trash2, UserRound, X } from 'lucide-vue-next'
-import { products, categories, productosOfertas, adminAlertasStock, getProductImage } from '@/data/products'
-import { mockAdmin, getClientUsers, mockOrders, getOrderDetails } from '@/data/admin'
+import { useAuth } from '@/composables/useAuth'
+import { getProductImage } from '@/data/products'
+import { getAdminStockAlerts, getAdminUsers, getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, createAdminCategory, updateAdminCategory, deleteAdminCategory, getAdminOrders, getAdminOrderDetail, createAdminOrder, updateAdminOrder, addAdminOrderLine, updateAdminOrderLine, deleteAdminOrderLine, getPaymentMethods } from '@/services/adminService'
 
-const activeSection = ref('datos')
 const router = useRouter()
-const { clearAuthUser } = useAuth()
+const { authUser, clearAuthUser } = useAuth()
+const activeSection = ref('datos')
 const summaryOpen = ref(false)
 const userSearch = ref('')
 const productSearch = ref('')
 const categorySearch = ref('')
+const orderSearch = ref('')
+const globalMessage = ref('')
+const globalError = ref('')
+const stockAlerts = ref([])
+const usersList = ref([])
+const productList = ref([])
+const categoryList = ref([])
+const orderList = ref([])
+const paymentMethods = ref([])
+const stockAlertsLoading = ref(false)
+const usersLoading = ref(false)
+const productsLoading = ref(false)
+const categoriesLoading = ref(false)
+const ordersLoading = ref(false)
+const orderDetailLoading = ref(false)
+const paymentMethodsLoading = ref(false)
+const stockAlertsError = ref('')
+const usersError = ref('')
+const productsError = ref('')
+const categoriesError = ref('')
+const ordersError = ref('')
+const orderDetailError = ref('')
+const paymentMethodsError = ref('')
 const productModalOpen = ref(false)
 const productModalMode = ref('edit')
 const categoryModalOpen = ref(false)
 const categoryModalMode = ref('edit')
-const productList = ref(products.map((product) => ({ ...product })))
-const categoryList = ref(categories.map((category) => ({ ...category })))
-const orderSearch = ref('')
 const orderModalOpen = ref(false)
 const orderModalMode = ref('edit')
 const selectedOrder = ref(null)
-const orderStatusOptions = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado']
-const paymentStatusOptions = ['pendiente', 'pagado', 'rechazado']
-const paymentMethodOptions = ['Tarjeta bancaria', 'PayPal', 'Transferencia bancaria', 'Bizum']
-
+const orderStatusOptions = ['PENDIENTE', 'PROCESANDO', 'ENVIADO', 'ENTREGADO', 'CANCELADO']
+const paymentStatusOptions = ['PENDIENTE', 'PAGADO', 'RECHAZADO']
 const productForm = ref({
   idProducto: null,
   Nombre: '',
   Precio: 0,
   iva: 21,
   Stock: 0,
-  Image: null,
+  Image: '',
   Descripcion: '',
   Activo: 1,
   idCategoria: null,
   EnOferta: 0,
   Descuento: 0,
-  FechaFinOferta: null
+  FechaFinOferta: ''
 })
-
 const categoryForm = ref({
   idCategoria: null,
   Nombre: '',
   CategoriaPadre: null
 })
-
 const categoryMode = ref('existing')
 const newCategoryName = ref('')
 const categoryParentId = ref(null)
 
-function getOrderLineSubtotal(product) {
-  const price = Number(product.PrecioUnitario_SinIVA || 0)
-  const iva = Number(product.IVA || 0)
-  const quantity = Number(product.Cantidad || 0)
-  const priceWithIva = price + (price * iva / 100)
-
-  return priceWithIva * quantity
+function asArray(data) {
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.content)) return data.content
+  if (Array.isArray(data?.items)) return data.items
+  if (data && typeof data === 'object') return [data]
+  return []
 }
 
-function normalizeOrderProducts(order) {
-  const rawLines = getOrderDetails(order.idPedido)
-
-  if (Array.isArray(rawLines) && rawLines.length > 0) {
-    return rawLines.map((line, index) => {
-      const product = productList.value.find((item) => item.idProducto === Number(line.idProducto)) ||
-        products.find((item) => item.idProducto === Number(line.idProducto))
-
-      return {
-        idLinea: `${line.idPedido}-${line.idProducto}-${index}`,
-        idPedido: line.idPedido,
-        idProducto: Number(line.idProducto),
-        Nombre: line.NombreProducto || product?.Nombre || 'Producto pedido',
-        Cantidad: Number(line.Cantidad || 1),
-        PrecioUnitario_SinIVA: Number(line.PrecioUnitarioSinIVA || line.precioUnitario || product?.Precio || product?.PrecioOriginal_SinIVA || 0),
-        IVA: Number(line.IVA || product?.iva || 21)
-      }
-    })
+function getFirstValue(item, keys, fallback = null) {
+  for (const key of keys) {
+    if (item?.[key] !== undefined && item?.[key] !== null) return item[key]
   }
 
-  const firstProduct = productList.value[0] || products[0]
+  return fallback
+}
 
-  return [
-    {
-      idLinea: `${order.idPedido || 'new'}-${firstProduct?.idProducto || 1}-0`,
-      idPedido: order.idPedido,
-      idProducto: firstProduct?.idProducto || 1,
-      Nombre: firstProduct?.Nombre || 'Producto ejemplo',
-      Cantidad: 1,
-      PrecioUnitario_SinIVA: Number(firstProduct?.Precio || firstProduct?.PrecioOriginal_SinIVA || 10),
-      IVA: Number(firstProduct?.iva || 21)
-    }
-  ]
+function normalizeBoolean(value) {
+  return value === true || value === 1 || value === '1' || String(value).toUpperCase() === 'TRUE'
+}
+
+function normalizeNumber(value, fallback = 0) {
+  const number = Number(value)
+  return Number.isNaN(number) ? fallback : number
+}
+
+function formatBackendDate(value) {
+  if (!value) return ''
+  return String(value).slice(0, 16)
+}
+
+function clearMessages() {
+  globalMessage.value = ''
+  globalError.value = ''
+}
+
+function showMessage(message) {
+  globalMessage.value = message
+  globalError.value = ''
+}
+
+function showError(message, error) {
+  globalError.value = message
+  globalMessage.value = ''
+  console.error(message, error)
+}
+
+function normalizeUser(user) {
+  return {
+    idUsuario: getFirstValue(user, ['idUsuario', 'id'], ''),
+    email: getFirstValue(user, ['email'], ''),
+    Nombre: getFirstValue(user, ['Nombre', 'nombre'], 'Usuario'),
+    Apellido1: getFirstValue(user, ['Apellido1', 'apellido1'], ''),
+    Apellido2: getFirstValue(user, ['Apellido2', 'apellido2'], ''),
+    Telefono: getFirstValue(user, ['Telefono', 'telefono'], ''),
+    Rol: getFirstValue(user, ['Rol', 'rol'], 'CLIENTE'),
+    Activo: normalizeBoolean(getFirstValue(user, ['Activo', 'activo'], true)) ? 1 : 0
+  }
+}
+
+function normalizeProduct(product) {
+  const idProducto = getFirstValue(product, ['idProducto', 'id'], null)
+  const precioOriginalSinIva = normalizeNumber(getFirstValue(product, ['PrecioOriginal_SinIVA', 'precioOriginalSinIVA', 'precio', 'Precio'], 0))
+  const precioOriginalConIva = normalizeNumber(getFirstValue(product, ['PrecioOriginal_ConIVA', 'precioOriginalConIVA'], 0))
+  const precioFinalSinIva = normalizeNumber(getFirstValue(product, ['PrecioFinal_SinIVA', 'precioFinalSinIVA'], precioOriginalSinIva))
+  const precioFinalConIva = normalizeNumber(getFirstValue(product, ['PrecioFinal_ConIVA', 'precioFinalConIVA'], precioOriginalConIva))
+  const iva = normalizeNumber(getFirstValue(product, ['iva', 'IVA'], 21), 21)
+  const enOferta = normalizeBoolean(getFirstValue(product, ['EnOferta', 'enOferta'], false))
+  const activo = normalizeBoolean(getFirstValue(product, ['Activo', 'activo'], true))
+
+  return {
+    idProducto,
+    Nombre: getFirstValue(product, ['Nombre', 'nombre'], 'Producto sin nombre'),
+    Precio: precioOriginalSinIva,
+    iva,
+    Stock: normalizeNumber(getFirstValue(product, ['Stock', 'stock'], 0)),
+    Image: getFirstValue(product, ['Image', 'imagen'], ''),
+    Descripcion: getFirstValue(product, ['Descripcion', 'descripcion'], ''),
+    Activo: activo ? 1 : 0,
+    idCategoria: getFirstValue(product, ['idCategoria'], null),
+    EnOferta: enOferta ? 1 : 0,
+    Descuento: normalizeNumber(getFirstValue(product, ['Descuento', 'descuento'], 0)),
+    FechaFinOferta: formatBackendDate(getFirstValue(product, ['FechaFinOferta', 'fechaFinOferta'], '')),
+    PrecioOriginal_SinIVA: precioOriginalSinIva,
+    PrecioOriginal_ConIVA: precioOriginalConIva,
+    PrecioFinal_SinIVA: precioFinalSinIva,
+    PrecioFinal_ConIVA: precioFinalConIva,
+    NombreCategoria: getFirstValue(product, ['NombreCategoria', 'nombreCategoria'], ''),
+    NombreCategoriaPadre: getFirstValue(product, ['NombreCategoriaPadre', 'nombreCategoriaPadre'], '')
+  }
+}
+
+function normalizeCategory(category) {
+  const parent = getFirstValue(category, ['categoriaPadre', 'CategoriaPadre'], null)
+  const idParent = typeof parent === 'object' && parent !== null ? getFirstValue(parent, ['id', 'idCategoria'], null) : parent
+
+  return {
+    idCategoria: getFirstValue(category, ['idCategoria', 'id'], null),
+    Nombre: getFirstValue(category, ['Nombre', 'nombre'], 'Categoría sin nombre'),
+    CategoriaPadre: idParent,
+    productosAsociados: asArray(getFirstValue(category, ['productosAsociados'], []))
+  }
+}
+
+function normalizeStockAlert(alert) {
+  return {
+    idProducto: getFirstValue(alert, ['idProducto', 'idproducto'], null),
+    Nombre: getFirstValue(alert, ['Nombre', 'nombre', 'nombreProducto'], 'Producto sin nombre'),
+    Stock: normalizeNumber(getFirstValue(alert, ['Stock', 'stock'], 0)),
+    idCategoria: getFirstValue(alert, ['idCategoria', 'idcategoria'], null),
+    Prioridad: getFirstValue(alert, ['Prioridad', 'prioridad'], 'Bajo')
+  }
+}
+
+function normalizePaymentMethod(method) {
+  return {
+    idMetodoPago: getFirstValue(method, ['idMetodoPago', 'id'], null),
+    Nombre: getFirstValue(method, ['Nombre', 'nombre'], 'Método de pago'),
+    Activo: normalizeBoolean(getFirstValue(method, ['Activo', 'activo'], true)) ? 1 : 0
+  }
 }
 
 function normalizeOrder(order) {
-  const normalizedProducts = normalizeOrderProducts(order)
-  const total = normalizedProducts.reduce((sum, line) => sum + getOrderLineSubtotal(line), 0)
-
-  const estadoPedido = order.EstadoPedido === 'pagado' ? 'procesando' :
-    order.EstadoPedido === 'preparando' ? 'procesando' :
-    order.EstadoPedido || 'pendiente'
-
-  const estadoPago = order.EstadoPago || (order.EstadoPedido === 'pagado' ? 'pagado' : 'pendiente')
-
   return {
-    ...order,
-    idPedido: Number(order.idPedido || 1),
-    CodigoPedido: order.CodigoPedido || `FM${Date.now()}`,
-    Cliente: order.Cliente || order.Nombre_Usuario || 'Cliente Funkomanía',
-    Email: order.Email || order.email || order.Email_Usuario || 'cliente@funkomania.com',
-    Telefono: order.Telefono || '600123456',
-    DireccionEnvio: order.DireccionEnvio || `Dirección ID ${order.idDireccion || ''}`,
-    FechaPedido: order.FechaPedido || new Date().toISOString().slice(0, 10),
-    EstadoPedido: estadoPedido,
-    EstadoPago: estadoPago,
-    MetodoPago: order.MetodoPago || order.Metodo_Pago || 'Tarjeta bancaria',
-    TotalConIVA: Number(order.TotalConIVA || total || 0),
-    Productos: normalizedProducts
+    idPedido: getFirstValue(order, ['idPedido'], null),
+    CodigoPedido: getFirstValue(order, ['CodigoPedido', 'codigoPedido'], ''),
+    idUsuario: getFirstValue(order, ['idUsuario'], null),
+    Cliente: getFirstValue(order, ['Cliente', 'nombreUsuario', 'Nombre_Usuario'], 'Cliente Funkomanía'),
+    Email: getFirstValue(order, ['Email', 'emailUsuario', 'Email_Usuario'], ''),
+    Telefono: getFirstValue(order, ['Telefono', 'telefono'], ''),
+    DireccionEnvio: getFirstValue(order, ['DireccionEnvio', 'direccionEnvio'], ''),
+    FechaPedido: String(getFirstValue(order, ['FechaPedido', 'fechaPedido'], '')).slice(0, 10),
+    EstadoPedido: getFirstValue(order, ['EstadoPedido', 'estadoPedido'], 'PENDIENTE'),
+    EstadoPago: getFirstValue(order, ['EstadoPago', 'estadoPago'], 'PENDIENTE'),
+    MetodoPago: getFirstValue(order, ['MetodoPago', 'metodoPago'], ''),
+    idMetodoPago: getFirstValue(order, ['idMetodoPago'], null),
+    idDireccion: getFirstValue(order, ['idDireccion'], null),
+    Comentarios: getFirstValue(order, ['Comentarios', 'comentarios'], ''),
+    TotalConIVA: normalizeNumber(getFirstValue(order, ['TotalConIVA', 'totalConIVA', 'totalPedido'], 0)),
+    Productos: []
   }
 }
 
-const orderList = ref(mockOrders.map((order) => normalizeOrder(order)))
+function normalizeOrderLine(line) {
+  return {
+    idLinea: `${getFirstValue(line, ['idPedido'], 'pedido')}-${getFirstValue(line, ['idProducto'], 'producto')}-${Date.now()}-${Math.random()}`,
+    idPedido: getFirstValue(line, ['idPedido'], null),
+    idProducto: getFirstValue(line, ['idProducto'], null),
+    Nombre: getFirstValue(line, ['Nombre', 'nombreProducto'], 'Producto pedido'),
+    Cantidad: normalizeNumber(getFirstValue(line, ['Cantidad', 'cantidad'], 1), 1),
+    PrecioUnitario_SinIVA: normalizeNumber(getFirstValue(line, ['PrecioUnitario_SinIVA', 'precioUnitarioSinIVA', 'precioUnitario'], 0)),
+    IVA: normalizeNumber(getFirstValue(line, ['IVA', 'iva', 'ivaPorcentaje'], 21), 21),
+    _isNew: false
+  }
+}
 
-const clientUsers = computed(() => {
-  return getClientUsers()
-})
+function buildProductRequest() {
+  return {
+    idCategoria: Number(productForm.value.idCategoria),
+    nombre: productForm.value.Nombre,
+    precio: Number(productForm.value.Precio || 0),
+    stock: Number(productForm.value.Stock || 0),
+    imagen: productForm.value.Image || null,
+    descripcion: productForm.value.Descripcion,
+    iva: Number(productForm.value.iva || 0),
+    activo: Number(productForm.value.Activo) === 1,
+    enOferta: Number(productForm.value.EnOferta) === 1,
+    descuento: Number(productForm.value.Descuento || 0),
+    fechaFinOferta: productForm.value.FechaFinOferta || null
+  }
+}
+
+function buildCategoryRequest(categoryData) {
+  return {
+    nombre: categoryData.Nombre,
+    idCategoriaPadre: categoryData.CategoriaPadre ? Number(categoryData.CategoriaPadre) : null
+  }
+}
+
+function buildOrderRequest(order) {
+  return {
+    idUsuario: Number(order.idUsuario),
+    idDireccion: Number(order.idDireccion),
+    idMetodoPago: Number(order.idMetodoPago),
+    estadoPedido: order.EstadoPedido,
+    estadoPago: order.EstadoPago,
+    comentarios: order.Comentarios || '',
+    productos: order.Productos.map((product) => ({
+      idProducto: Number(product.idProducto),
+      precioUnitarioSinIVA: Number(product.PrecioUnitario_SinIVA || 0),
+      iva: Number(product.IVA || 0),
+      cantidad: Number(product.Cantidad || 1)
+    }))
+  }
+}
+
+function buildOrderUpdateRequest(order) {
+  return {
+    estadoPedido: order.EstadoPedido,
+    estadoPago: order.EstadoPago,
+    idMetodoPago: Number(order.idMetodoPago || 0),
+    comentarios: order.Comentarios || ''
+  }
+}
+
+function buildOrderLineRequest(product) {
+  return {
+    idProducto: Number(product.idProducto),
+    cantidad: Number(product.Cantidad || 1),
+    precioUnitarioSinIVA: Number(product.PrecioUnitario_SinIVA || 0),
+    IVA: Number(product.IVA || 0)
+  }
+}
+
+async function loadStockAlerts() {
+  stockAlertsLoading.value = true
+  stockAlertsError.value = ''
+
+  try {
+    const data = await getAdminStockAlerts()
+    stockAlerts.value = asArray(data).map(normalizeStockAlert)
+  } catch (error) {
+    stockAlerts.value = []
+    stockAlertsError.value = 'No se pudieron cargar las alertas de stock.'
+    console.error('Error cargando alertas de stock:', error)
+  } finally {
+    stockAlertsLoading.value = false
+  }
+}
+
+async function loadUsers() {
+  usersLoading.value = true
+  usersError.value = ''
+
+  try {
+    const data = await getAdminUsers()
+    usersList.value = asArray(data).map(normalizeUser)
+  } catch (error) {
+    usersList.value = []
+    usersError.value = 'No se pudieron cargar los usuarios.'
+    console.error('Error cargando usuarios:', error)
+  } finally {
+    usersLoading.value = false
+  }
+}
+
+async function loadProducts() {
+  productsLoading.value = true
+  productsError.value = ''
+
+  try {
+    const data = await getAdminProducts()
+    productList.value = asArray(data).map(normalizeProduct)
+  } catch (error) {
+    productList.value = []
+    productsError.value = 'No se pudieron cargar los productos.'
+    console.error('Error cargando productos:', error)
+  } finally {
+    productsLoading.value = false
+  }
+}
+
+async function loadCategories() {
+  categoriesLoading.value = true
+  categoriesError.value = ''
+
+  try {
+    const data = await getAdminCategories()
+    categoryList.value = asArray(data).map(normalizeCategory)
+  } catch (error) {
+    categoryList.value = []
+    categoriesError.value = 'No se pudieron cargar las categorías.'
+    console.error('Error cargando categorías:', error)
+  } finally {
+    categoriesLoading.value = false
+  }
+}
+
+async function loadOrders() {
+  ordersLoading.value = true
+  ordersError.value = ''
+
+  try {
+    const data = await getAdminOrders()
+    orderList.value = asArray(data).map(normalizeOrder)
+  } catch (error) {
+    orderList.value = []
+    ordersError.value = 'No se pudieron cargar los pedidos.'
+    console.error('Error cargando pedidos:', error)
+  } finally {
+    ordersLoading.value = false
+  }
+}
+
+async function loadPaymentMethods() {
+  paymentMethodsLoading.value = true
+  paymentMethodsError.value = ''
+
+  try {
+    const data = await getPaymentMethods()
+    paymentMethods.value = asArray(data).map(normalizePaymentMethod).filter((method) => method.Activo === 1)
+  } catch (error) {
+    paymentMethods.value = []
+    paymentMethodsError.value = 'No se pudieron cargar los métodos de pago.'
+    console.error('Error cargando métodos de pago:', error)
+  } finally {
+    paymentMethodsLoading.value = false
+  }
+}
+
+async function loadAdminData() {
+  await Promise.all([
+    loadStockAlerts(),
+    loadUsers(),
+    loadProducts(),
+    loadCategories(),
+    loadOrders(),
+    loadPaymentMethods()
+  ])
+}
 
 const filteredUsers = computed(() => {
   const text = userSearch.value.trim().toLowerCase()
 
-  return clientUsers.value.filter((user) => {
+  return usersList.value.filter((user) => {
     return user.Nombre.toLowerCase().includes(text) ||
       user.Apellido1.toLowerCase().includes(text) ||
       user.email.toLowerCase().includes(text) ||
@@ -187,9 +445,7 @@ const selectedOrderProducts = computed(() => {
 })
 
 const selectedOrderTotal = computed(() => {
-  return selectedOrderProducts.value.reduce((sum, product) => {
-    return sum + getOrderLineSubtotal(product)
-  }, 0)
+  return selectedOrderProducts.value.reduce((sum, product) => sum + getOrderLineSubtotal(product), 0)
 })
 
 const activeProducts = computed(() => {
@@ -201,11 +457,20 @@ const inactiveProducts = computed(() => {
 })
 
 const lowStockProducts = computed(() => {
-  return adminAlertasStock
+  return stockAlerts.value
 })
 
-const criticalStockProducts = computed(() => {
-  return lowStockProducts.value.filter((product) => product.Stock === 0 || product.Prioridad === 'Critico')
+const activeOffers = computed(() => {
+  const now = new Date()
+
+  return productList.value.filter((product) => {
+    const hasDate = product.FechaFinOferta ? new Date(product.FechaFinOferta) >= now : true
+    return product.EnOferta === 1 && Number(product.Descuento) > 0 && product.Activo === 1 && hasDate
+  })
+})
+
+const activePaymentMethods = computed(() => {
+  return paymentMethods.value.filter((method) => method.Activo === 1)
 })
 
 const availableParentCategories = computed(() => {
@@ -238,12 +503,21 @@ const adminStats = computed(() => {
     },
     {
       title: 'Ofertas activas',
-      value: productosOfertas.length,
+      value: activeOffers.value.length,
       text: 'Descuentos vigentes',
       icon: BadgePercent
     }
   ]
 })
+
+function getOrderLineSubtotal(product) {
+  const price = Number(product.PrecioUnitario_SinIVA || 0)
+  const iva = Number(product.IVA || 0)
+  const quantity = Number(product.Cantidad || 0)
+  const priceWithIva = price + (price * iva / 100)
+
+  return priceWithIva * quantity
+}
 
 function setSection(section) {
   activeSection.value = section
@@ -255,16 +529,13 @@ function toggleSummary() {
 
 function getProductDisplayImage(image) {
   if (!image) return null
-
-  if (String(image).startsWith('blob:') || String(image).startsWith('data:') || String(image).startsWith('http')) {
-    return image
-  }
+  if (String(image).startsWith('blob:') || String(image).startsWith('data:') || String(image).startsWith('http')) return image
 
   return getProductImage(image)
 }
 
 function getCategoryById(idCategoria) {
-  return categoryList.value.find((category) => category.idCategoria === Number(idCategoria)) || null
+  return categoryList.value.find((category) => Number(category.idCategoria) === Number(idCategoria)) || null
 }
 
 function getCategoryParentName(idCategoria) {
@@ -274,6 +545,9 @@ function getCategoryParentName(idCategoria) {
 }
 
 function getCategoryProductCount(idCategoria) {
+  const category = getCategoryById(idCategoria)
+  if (category?.productosAsociados?.length) return category.productosAsociados.length
+
   return productList.value.filter((product) => Number(product.idCategoria) === Number(idCategoria)).length
 }
 
@@ -282,21 +556,8 @@ function updateCategoryParentFromSelected() {
   categoryParentId.value = category?.CategoriaPadre || null
 }
 
-function getPrecioConIva(precio, iva) {
-  return Number(precio) + (Number(precio) * Number(iva) / 100)
-}
-
-function getPrecioConDescuento(precio, descuento, enOferta) {
-  if (Number(enOferta) !== 1 || Number(descuento) <= 0) {
-    return Number(precio)
-  }
-
-  return Number(precio) - (Number(precio) * Number(descuento) / 100)
-}
-
 function updateOrderLineProduct(line) {
-  const product = productList.value.find((item) => item.idProducto === Number(line.idProducto))
-
+  const product = productList.value.find((item) => Number(item.idProducto) === Number(line.idProducto))
   if (!product) return
 
   line.Nombre = product.Nombre
@@ -304,11 +565,17 @@ function updateOrderLineProduct(line) {
   line.IVA = Number(product.iva || 21)
 }
 
+function handleOrderPaymentMethodChange() {
+  if (!selectedOrder.value) return
+
+  const method = activePaymentMethods.value.find((item) => Number(item.idMetodoPago) === Number(selectedOrder.value.idMetodoPago))
+  selectedOrder.value.MetodoPago = method?.Nombre || ''
+}
+
 function addOrderLine() {
   if (!selectedOrder.value) return
 
   const firstProduct = productList.value[0]
-
   if (!firstProduct) return
 
   selectedOrder.value.Productos.push({
@@ -318,101 +585,53 @@ function addOrderLine() {
     Nombre: firstProduct.Nombre,
     Cantidad: 1,
     PrecioUnitario_SinIVA: Number(firstProduct.Precio || firstProduct.PrecioOriginal_SinIVA || 0),
-    IVA: Number(firstProduct.iva || 21)
+    IVA: Number(firstProduct.iva || 21),
+    _isNew: true
   })
 }
 
-function removeOrderLine(index) {
+async function removeOrderLine(index) {
   if (!selectedOrder.value) return
+
+  const line = selectedOrder.value.Productos[index]
+  
+  if (!confirm(`¿Seguro que quieres eliminar la línea "${line?.Nombre || 'producto'}" del pedido?`)) return
+
+  if (orderModalMode.value === 'edit' && line && !line._isNew) {
+    try {
+      await deleteAdminOrderLine(selectedOrder.value.idPedido, line.idProducto)
+      showMessage('Línea eliminada correctamente.')
+    } catch (error) {
+      showError('No se pudo eliminar la línea del pedido.', error)
+      return
+    }
+  }
 
   selectedOrder.value.Productos.splice(index, 1)
 }
 
-function createCategoryIfNeeded() {
-  if (categoryMode.value === 'existing') {
-    const category = getCategoryById(productForm.value.idCategoria)
-
-    if (category) {
-      category.CategoriaPadre = categoryParentId.value ? Number(categoryParentId.value) : null
-    }
-
-    return Number(productForm.value.idCategoria)
-  }
-
-  const name = newCategoryName.value.trim()
-
-  if (!name) {
-    return Number(productForm.value.idCategoria)
-  }
-
-  const nextId = categoryList.value.length ? Math.max(...categoryList.value.map((category) => category.idCategoria)) + 1 : 1
-
-  const newCategory = {
-    idCategoria: nextId,
-    Nombre: name,
-    CategoriaPadre: categoryParentId.value ? Number(categoryParentId.value) : null
-  }
-
-  categoryList.value.push(newCategory)
-
-  return nextId
-}
-
-function buildProductData() {
-  const idCategoria = createCategoryIfNeeded()
-  const category = getCategoryById(idCategoria)
-  const parentCategory = category?.CategoriaPadre ? getCategoryById(category.CategoriaPadre) : null
-  const precioSinIva = Number(productForm.value.Precio || 0)
-  const iva = Number(productForm.value.iva || 0)
-  const descuento = Number(productForm.value.Descuento || 0)
-  const precioFinalSinIva = getPrecioConDescuento(precioSinIva, descuento, productForm.value.EnOferta)
-
-  return {
-    ...productForm.value,
-    idProducto: Number(productForm.value.idProducto),
-    Nombre: productForm.value.Nombre,
-    Precio: precioSinIva,
-    iva: iva,
-    Stock: Number(productForm.value.Stock || 0),
-    Image: productForm.value.Image || null,
-    Descripcion: productForm.value.Descripcion,
-    Activo: Number(productForm.value.Activo),
-    idCategoria: Number(idCategoria),
-    EnOferta: Number(productForm.value.EnOferta),
-    Descuento: descuento,
-    FechaFinOferta: productForm.value.FechaFinOferta || null,
-
-    PrecioOriginal_SinIVA: precioSinIva,
-    PrecioOriginal_ConIVA: getPrecioConIva(precioSinIva, iva),
-    PrecioFinal_SinIVA: precioFinalSinIva,
-    PrecioFinal_ConIVA: getPrecioConIva(precioFinalSinIva, iva),
-    NombreCategoria: category?.Nombre || '',
-    NombreCategoriaPadre: parentCategory?.Nombre || null
-  }
-}
-
 function openNewProductModal() {
-  const nextId = productList.value.length ? Math.max(...productList.value.map((product) => product.idProducto)) + 1 : 1
   const firstCategory = categoryList.value[0] || null
 
+  clearMessages()
   productModalMode.value = 'create'
   categoryMode.value = 'existing'
   newCategoryName.value = ''
   categoryParentId.value = firstCategory?.CategoriaPadre || null
 
   productForm.value = {
-    idProducto: nextId,
+    idProducto: null,
     Nombre: '',
     Precio: 0,
     iva: 21,
     Stock: 0,
-    Image: null,
+    Image: '',
     Descripcion: '',
     Activo: 1,
     idCategoria: firstCategory?.idCategoria || null,
     EnOferta: 0,
     Descuento: 0,
-    FechaFinOferta: null
+    FechaFinOferta: ''
   }
 
   productModalOpen.value = true
@@ -421,6 +640,7 @@ function openNewProductModal() {
 function openEditProductModal(product) {
   const category = getCategoryById(product.idCategoria)
 
+  clearMessages()
   productModalMode.value = 'edit'
   categoryMode.value = 'existing'
   newCategoryName.value = ''
@@ -450,32 +670,87 @@ function closeProductModal() {
 
 function handleProductImageUpload(event) {
   const file = event.target.files?.[0]
-
   if (!file) return
 
   productForm.value.Image = URL.createObjectURL(file)
 }
 
-function saveProduct() {
-  const productData = buildProductData()
+async function createCategoryIfNeeded() {
+  if (categoryMode.value === 'existing') return Number(productForm.value.idCategoria)
 
-  if (productModalMode.value === 'create') {
-    productList.value.push(productData)
-  } else {
-    productList.value = productList.value.map((product) => {
-      return product.idProducto === productData.idProducto ? productData : product
-    })
+  const name = newCategoryName.value.trim()
+  if (!name) return Number(productForm.value.idCategoria)
+
+  const createdCategory = await createAdminCategory({
+    nombre: name,
+    idCategoriaPadre: categoryParentId.value ? Number(categoryParentId.value) : null
+  })
+
+  await loadCategories()
+  const normalizedCategory = normalizeCategory(createdCategory || {})
+
+  return normalizedCategory.idCategoria || categoryList.value.find((category) => category.Nombre === name)?.idCategoria || Number(productForm.value.idCategoria)
+}
+
+async function saveProduct() {
+  clearMessages()
+
+  try {
+    productForm.value.idCategoria = await createCategoryIfNeeded()
+    const request = buildProductRequest()
+
+    if (productModalMode.value === 'create') {
+      await createAdminProduct(request)
+      showMessage('Producto creado correctamente.')
+    } else {
+      await updateAdminProduct(productForm.value.idProducto, request)
+      showMessage('Producto actualizado correctamente.')
+    }
+
+    closeProductModal()
+    await Promise.all([loadProducts(), loadStockAlerts(), loadCategories()])
+  } catch (error) {
+    showError('No se pudo guardar el producto.', error)
+  }
+}
+
+function handleOrderUserChange() {
+  if (!selectedOrder.value) return
+
+  const user = usersList.value.find((item) => Number(item.idUsuario) === Number(selectedOrder.value.idUsuario))
+
+  if (!user) {
+    selectedOrder.value.Cliente = ''
+    selectedOrder.value.Email = ''
+    selectedOrder.value.Telefono = ''
+    return
   }
 
-  closeProductModal()
+  selectedOrder.value.Cliente = `${user.Nombre} ${user.Apellido1 || ''}`.trim()
+  selectedOrder.value.Email = user.email
+  selectedOrder.value.Telefono = user.Telefono || ''
+}
+
+async function handleDeleteProduct(product) {
+  if (!confirm(`¿Seguro que quieres eliminar el producto "${product.Nombre}"?`)) return
+
+  clearMessages()
+
+  try {
+    await deleteAdminProduct(product.idProducto)
+    showMessage('Producto eliminado lógicamente.')
+    await Promise.all([loadProducts(), loadStockAlerts(), loadCategories()])
+  } catch (error) {
+    showError('No se pudo eliminar el producto.', error)
+  }
 }
 
 function openNewCategoryModal() {
-  const nextId = categoryList.value.length ? Math.max(...categoryList.value.map((category) => category.idCategoria)) + 1 : 1
-
+  clearMessages()
   categoryModalMode.value = 'create'
+
   categoryForm.value = {
-    idCategoria: nextId,
+    idCategoria: null,
     Nombre: '',
     CategoriaPadre: null
   }
@@ -484,7 +759,9 @@ function openNewCategoryModal() {
 }
 
 function openEditCategoryModal(category) {
+  clearMessages()
   categoryModalMode.value = 'edit'
+
   categoryForm.value = {
     idCategoria: category.idCategoria,
     Nombre: category.Nombre,
@@ -498,77 +775,80 @@ function closeCategoryModal() {
   categoryModalOpen.value = false
 }
 
-function saveCategory() {
+async function saveCategory() {
+  clearMessages()
+
   const categoryData = {
-    idCategoria: Number(categoryForm.value.idCategoria),
+    idCategoria: categoryForm.value.idCategoria ? Number(categoryForm.value.idCategoria) : null,
     Nombre: categoryForm.value.Nombre.trim(),
     CategoriaPadre: categoryForm.value.CategoriaPadre ? Number(categoryForm.value.CategoriaPadre) : null
   }
 
   if (!categoryData.Nombre) return
 
-  if (categoryModalMode.value === 'create') {
-    categoryList.value.push(categoryData)
-  } else {
-    categoryList.value = categoryList.value.map((category) => {
-      return category.idCategoria === categoryData.idCategoria ? categoryData : category
-    })
+  try {
+    if (categoryModalMode.value === 'create') {
+      await createAdminCategory(buildCategoryRequest(categoryData))
+      showMessage('Categoría creada correctamente.')
+    } else {
+      await updateAdminCategory(categoryData.idCategoria, buildCategoryRequest(categoryData))
+      showMessage('Categoría actualizada correctamente.')
+    }
 
-    productList.value = productList.value.map((product) => {
-      if (Number(product.idCategoria) !== categoryData.idCategoria) return product
-
-      const parentCategory = categoryData.CategoriaPadre ? getCategoryById(categoryData.CategoriaPadre) : null
-
-      return {
-        ...product,
-        NombreCategoria: categoryData.Nombre,
-        NombreCategoriaPadre: parentCategory?.Nombre || null
-      }
-    })
+    closeCategoryModal()
+    await Promise.all([loadCategories(), loadProducts()])
+  } catch (error) {
+    showError('No se pudo guardar la categoría.', error)
   }
-
-  closeCategoryModal()
 }
 
-function deleteCategory(category) {
-  if (getCategoryProductCount(category.idCategoria) > 0) {
-    console.log('No se puede eliminar una categoría con productos asociados')
-    return
-  }
+async function handleDeleteCategory(category) {
+  if (!confirm(`¿Seguro que quieres eliminar la categoría "${category.Nombre}"?`)) return
 
-  categoryList.value = categoryList.value
-    .filter((item) => item.idCategoria !== category.idCategoria)
-    .map((item) => {
-      return item.CategoriaPadre === category.idCategoria ? { ...item, CategoriaPadre: null } : item
-    })
+  clearMessages()
+
+  try {
+    await deleteAdminCategory(category.idCategoria)
+    showMessage('Categoría eliminada correctamente.')
+    await Promise.all([loadCategories(), loadProducts()])
+  } catch (error) {
+    showError('No se pudo eliminar la categoría. Comprueba que no tenga productos asociados.', error)
+  }
 }
 
 function openNewOrderModal() {
-  const nextId = orderList.value.length ? Math.max(...orderList.value.map((order) => order.idPedido)) + 1 : 1
   const firstProduct = productList.value[0]
+  const firstPaymentMethod = activePaymentMethods.value[0] || null
 
+  clearMessages()
   orderModalMode.value = 'create'
+
   selectedOrder.value = {
-    idPedido: nextId,
-    CodigoPedido: `FM${Date.now()}`,
+    idPedido: null,
+    CodigoPedido: '',
+    idUsuario: '',
+    idDireccion: '',
+    idMetodoPago: firstPaymentMethod?.idMetodoPago || '',
     Cliente: 'Nuevo cliente',
-    Email: 'cliente@funkomania.com',
-    Telefono: '600123456',
-    DireccionEnvio: 'Dirección de envío',
+    Email: '',
+    Telefono: '',
+    DireccionEnvio: '',
     FechaPedido: new Date().toISOString().slice(0, 10),
-    EstadoPedido: 'pendiente',
-    EstadoPago: 'pendiente',
-    MetodoPago: 'Tarjeta bancaria',
+    EstadoPedido: 'PENDIENTE',
+    EstadoPago: 'PENDIENTE',
+    MetodoPago: firstPaymentMethod?.Nombre || '',
+    Comentarios: '',
     TotalConIVA: 0,
     Productos: firstProduct ? [
       {
         idLinea: `new-${Date.now()}`,
-        idPedido: nextId,
+        idPedido: null,
         idProducto: firstProduct.idProducto,
         Nombre: firstProduct.Nombre,
         Cantidad: 1,
         PrecioUnitario_SinIVA: Number(firstProduct.Precio || firstProduct.PrecioOriginal_SinIVA || 0),
-        IVA: Number(firstProduct.iva || 21)
+        IVA: Number(firstProduct.iva || 21),
+        _isNew: true
       }
     ] : []
   }
@@ -576,14 +856,34 @@ function openNewOrderModal() {
   orderModalOpen.value = true
 }
 
-function openOrderModal(order) {
+async function openOrderModal(order) {
+  clearMessages()
+  orderDetailError.value = ''
+  orderDetailLoading.value = true
   orderModalMode.value = 'edit'
+
   selectedOrder.value = {
     ...order,
-    Productos: order.Productos.map((product) => ({ ...product }))
+    Productos: []
   }
 
   orderModalOpen.value = true
+
+  try {
+    const detail = await getAdminOrderDetail(order.idPedido)
+
+    selectedOrder.value = {
+      ...selectedOrder.value,
+      idUsuario: getFirstValue(detail, ['idUsuario'], selectedOrder.value.idUsuario),
+      TotalConIVA: normalizeNumber(getFirstValue(detail, ['totalConIVA'], selectedOrder.value.TotalConIVA)),
+      Productos: asArray(getFirstValue(detail, ['lineas'], [])).map(normalizeOrderLine)
+    }
+  } catch (error) {
+    orderDetailError.value = 'No se pudo cargar el detalle del pedido.'
+    console.error('Error cargando detalle pedido:', error)
+  } finally {
+    orderDetailLoading.value = false
+  }
 }
 
 function closeOrderModal() {
@@ -591,31 +891,72 @@ function closeOrderModal() {
   selectedOrder.value = null
 }
 
-function saveOrderChanges() {
+async function saveOrderChanges() {
   if (!selectedOrder.value) return
 
-  const updatedOrder = {
-    ...selectedOrder.value,
-    TotalConIVA: selectedOrderTotal.value,
-    Productos: selectedOrder.value.Productos.map((product) => ({ ...product }))
+  clearMessages()
+
+  if (!selectedOrder.value.idMetodoPago) {
+    showError('Selecciona un método de pago.')
+    return
   }
 
   if (orderModalMode.value === 'create') {
-    orderList.value.push(updatedOrder)
-  } else {
-    orderList.value = orderList.value.map((order) => {
-      return order.idPedido === updatedOrder.idPedido ? updatedOrder : order
-    })
+    if (!selectedOrder.value.idUsuario) {
+      showError('Selecciona un usuario para crear el pedido.')
+      return
+    }
+
+    if (!selectedOrder.value.idDireccion) {
+      showError('Este pedido necesita una dirección. Si el cliente no tiene dirección, primero debe crear una dirección en su cuenta.')
+      return
+    }
+
+    if (selectedOrder.value.Productos.length === 0) {
+      showError('El pedido debe tener al menos una línea de producto.')
+      return
+    }
   }
 
-  closeOrderModal()
+  try {
+    if (orderModalMode.value === 'create') {
+      await createAdminOrder(buildOrderRequest(selectedOrder.value))
+      showMessage('Pedido creado correctamente.')
+      closeOrderModal()
+      await loadOrders()
+      return
+    }
+
+    await updateAdminOrder(selectedOrder.value.idPedido, buildOrderUpdateRequest(selectedOrder.value))
+
+    for (const line of selectedOrder.value.Productos) {
+      if (line._isNew) {
+        await addAdminOrderLine(selectedOrder.value.idPedido, buildOrderLineRequest(line))
+      } else {
+        await updateAdminOrderLine(selectedOrder.value.idPedido, line.idProducto, {
+          cantidad: Number(line.Cantidad || 1),
+          PrecioUnitario_SinIVA: Number(line.PrecioUnitario_SinIVA || 0),
+          IVA: Number(line.IVA || 0)
+        })
+      }
+    }
+
+    showMessage('Pedido actualizado correctamente.')
+    closeOrderModal()
+    await loadOrders()
+  } catch (error) {
+    showError('No se pudo guardar el pedido.', error)
+  }
 }
 
 function handleLogout() {
   clearAuthUser()
-  clearNotifications()
   router.push('/')
 }
+
+onMounted(() => {
+  loadAdminData()
+})
 </script>
 
 <template>
@@ -629,6 +970,9 @@ function handleLogout() {
 
     <aside class="admin-summary-drawer" :class="{ 'admin-summary-drawer-open': summaryOpen }">
       <h2>Resumen admin</h2>
+      <p v-if="stockAlertsLoading" class="admin-summary-message">Cargando alertas de stock...</p>
+      <p v-else-if="stockAlertsError" class="admin-summary-message admin-summary-message-error">{{ stockAlertsError }}</p>
+
       <div class="admin-summary-list">
         <article v-for="card in adminStats" :key="card.title" class="admin-summary-card">
           <span class="admin-summary-icon">
@@ -651,13 +995,16 @@ function handleLogout() {
         <button class="admin-menu-button" :class="{ 'admin-menu-button-active': activeSection === 'categorias' }" type="button" @click="setSection('categorias')">Categorías</button>
         <button class="admin-menu-button" :class="{ 'admin-menu-button-active': activeSection === 'pedidos' }" type="button" @click="setSection('pedidos')">Pedidos</button>
 
-        <button class="admin-logout-button" type="button"  @click="handleLogout">
+        <button class="admin-logout-button" type="button" @click="handleLogout">
           <LogOut :size="18" :stroke-width="2.4" />
           Cerrar sesión
         </button>
       </aside>
 
       <section class="admin-main-panel">
+        <p v-if="globalMessage" class="admin-summary-message">{{ globalMessage }}</p>
+        <p v-if="globalError" class="admin-summary-message admin-summary-message-error">{{ globalError }}</p>
+
         <div v-if="activeSection === 'datos'" class="admin-section">
           <h1>Mis datos</h1>
 
@@ -667,23 +1014,18 @@ function handleLogout() {
             </span>
 
             <div class="admin-profile-info">
-              <h2>{{ mockAdmin.Nombre }} {{ mockAdmin.Apellido1 }}</h2>
-              <p>{{ mockAdmin.email }}</p>
+              <h2>{{ authUser.name || 'Administrador' }}</h2>
+              <p>{{ authUser.username }}</p>
 
               <div class="admin-profile-grid">
                 <div>
                   <span>Rol</span>
-                  <strong>{{ mockAdmin.Rol }}</strong>
-                </div>
-
-                <div>
-                  <span>Teléfono</span>
-                  <strong>{{ mockAdmin.Telefono }}</strong>
+                  <strong>{{ authUser.role || 'ADMIN' }}</strong>
                 </div>
 
                 <div>
                   <span>Estado</span>
-                  <strong>{{ mockAdmin.Activo === 1 ? 'Activo' : 'Inactivo' }}</strong>
+                  <strong>Activo</strong>
                 </div>
               </div>
             </div>
@@ -705,6 +1047,9 @@ function handleLogout() {
             </div>
           </div>
 
+          <p v-if="usersLoading" class="admin-summary-message">Cargando usuarios...</p>
+          <p v-else-if="usersError" class="admin-summary-message admin-summary-message-error">{{ usersError }}</p>
+
           <div class="admin-users-panel">
             <div class="admin-users-list">
               <article v-for="user in filteredUsers" :key="user.idUsuario" class="admin-user-row">
@@ -720,13 +1065,14 @@ function handleLogout() {
 
                 <div class="admin-user-right">
                   <strong>ID {{ user.idUsuario }}</strong>
+                  <small>{{ user.Rol }}</small>
                   <span :class="{ 'admin-status-disabled': user.Activo === 0 }">
                     {{ user.Activo === 1 ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
               </article>
 
-              <div v-if="filteredUsers.length === 0" class="admin-empty">
+              <div v-if="!usersLoading && filteredUsers.length === 0" class="admin-empty">
                 <p>No se encontraron usuarios.</p>
               </div>
             </div>
@@ -754,6 +1100,9 @@ function handleLogout() {
               </button>
             </div>
           </div>
+
+          <p v-if="productsLoading" class="admin-summary-message">Cargando artículos...</p>
+          <p v-else-if="productsError" class="admin-summary-message admin-summary-message-error">{{ productsError }}</p>
 
           <div class="admin-products-panel">
             <div class="admin-products-list">
@@ -789,11 +1138,16 @@ function handleLogout() {
                       <Edit :size="15" :stroke-width="2.5" />
                       Editar
                     </button>
+
+                    <button type="button" @click="handleDeleteProduct(product)">
+                      <Trash2 :size="15" :stroke-width="2.5" />
+                      Eliminar
+                    </button>
                   </div>
                 </div>
               </article>
 
-              <div v-if="filteredProducts.length === 0" class="admin-empty">
+              <div v-if="!productsLoading && filteredProducts.length === 0" class="admin-empty">
                 <p>No se encontraron artículos.</p>
               </div>
             </div>
@@ -821,6 +1175,9 @@ function handleLogout() {
               </button>
             </div>
           </div>
+
+          <p v-if="categoriesLoading" class="admin-summary-message">Cargando categorías...</p>
+          <p v-else-if="categoriesError" class="admin-summary-message admin-summary-message-error">{{ categoriesError }}</p>
 
           <div class="admin-categories-panel">
             <div class="admin-categories-list">
@@ -851,7 +1208,7 @@ function handleLogout() {
                       Editar
                     </button>
 
-                    <button class="admin-category-delete-button" type="button" :disabled="getCategoryProductCount(category.idCategoria) > 0" @click="deleteCategory(category)">
+                    <button class="admin-category-delete-button" type="button" :disabled="getCategoryProductCount(category.idCategoria) > 0" @click="handleDeleteCategory(category)">
                       <Trash2 :size="15" :stroke-width="2.5" />
                       Eliminar
                     </button>
@@ -859,7 +1216,7 @@ function handleLogout() {
                 </div>
               </article>
 
-              <div v-if="filteredCategories.length === 0" class="admin-empty">
+              <div v-if="!categoriesLoading && filteredCategories.length === 0" class="admin-empty">
                 <p>No se encontraron categorías.</p>
               </div>
             </div>
@@ -887,6 +1244,9 @@ function handleLogout() {
               </button>
             </div>
           </div>
+
+          <p v-if="ordersLoading" class="admin-summary-message">Cargando pedidos...</p>
+          <p v-else-if="ordersError" class="admin-summary-message admin-summary-message-error">{{ ordersError }}</p>
 
           <div class="admin-orders-panel">
             <div class="admin-orders-list">
@@ -925,7 +1285,7 @@ function handleLogout() {
                 </div>
               </article>
 
-              <div v-if="filteredOrders.length === 0" class="admin-empty">
+              <div v-if="!ordersLoading && filteredOrders.length === 0" class="admin-empty">
                 <p>No se encontraron pedidos.</p>
               </div>
             </div>
@@ -1122,39 +1482,50 @@ function handleLogout() {
           </button>
         </div>
 
+        <p v-if="orderDetailLoading" class="admin-summary-message">Cargando detalle del pedido...</p>
+        <p v-else-if="orderDetailError" class="admin-summary-message admin-summary-message-error">{{ orderDetailError }}</p>
+
         <div class="admin-order-detail-grid">
           <label class="admin-order-detail-field">
-            <span>Cliente</span>
-            <input v-model="selectedOrder.Cliente" type="text" />
+            <span>Usuario</span>
+            <select v-model="selectedOrder.idUsuario" :disabled="orderModalMode === 'edit'" @change="handleOrderUserChange">
+              <option value="">Selecciona usuario</option>
+              <option v-for="user in usersList" :key="user.idUsuario" :value="user.idUsuario">
+                ID {{ user.idUsuario }} - {{ user.Nombre }} {{ user.Apellido1 }} - {{ user.email }}
+              </option>
+            </select>
           </label>
 
           <label class="admin-order-detail-field">
-            <span>Email</span>
-            <input v-model="selectedOrder.Email" type="email" />
-          </label>
-
-          <label class="admin-order-detail-field">
-            <span>Teléfono</span>
-            <input v-model="selectedOrder.Telefono" type="text" />
-          </label>
-
-          <label class="admin-order-detail-field">
-            <span>Fecha pedido</span>
-            <input v-model="selectedOrder.FechaPedido" type="date" />
-          </label>
-
-          <label class="admin-order-detail-field admin-order-detail-field-full">
-            <span>Dirección de envío</span>
-            <input v-model="selectedOrder.DireccionEnvio" type="text" />
+            <span>ID dirección</span>
+            <input v-model="selectedOrder.idDireccion" type="number" :disabled="orderModalMode === 'edit'" />
           </label>
 
           <label class="admin-order-detail-field">
             <span>Método de pago</span>
-            <select v-model="selectedOrder.MetodoPago">
-              <option v-for="method in paymentMethodOptions" :key="method" :value="method">
-                {{ method }}
+            <select v-model="selectedOrder.idMetodoPago" @change="handleOrderPaymentMethodChange">
+              <option value="">Selecciona método</option>
+              <option v-for="method in activePaymentMethods" :key="method.idMetodoPago" :value="method.idMetodoPago">
+                ID {{ method.idMetodoPago }} - {{ method.Nombre }}
               </option>
             </select>
+            <small v-if="paymentMethodsLoading">Cargando métodos...</small>
+            <small v-else-if="paymentMethodsError">{{ paymentMethodsError }}</small>
+          </label>
+
+          <label class="admin-order-detail-field">
+            <span>Cliente</span>
+            <input v-model="selectedOrder.Cliente" type="text" disabled />
+          </label>
+
+          <label class="admin-order-detail-field">
+            <span>Email</span>
+            <input v-model="selectedOrder.Email" type="email" disabled />
+          </label>
+
+          <label class="admin-order-detail-field">
+            <span>Fecha pedido</span>
+            <input v-model="selectedOrder.FechaPedido" type="date" disabled />
           </label>
 
           <label class="admin-order-detail-field">
@@ -1174,6 +1545,11 @@ function handleLogout() {
               </option>
             </select>
           </label>
+
+          <label class="admin-order-detail-field admin-order-detail-field-full">
+            <span>Comentarios</span>
+            <input v-model="selectedOrder.Comentarios" type="text" />
+          </label>
         </div>
 
         <div class="admin-order-products">
@@ -1190,7 +1566,7 @@ function handleLogout() {
             <article v-for="(product, index) in selectedOrderProducts" :key="product.idLinea || `${product.idProducto}-${index}`" class="admin-order-product-row">
               <label>
                 <span>Producto</span>
-                <select v-model="product.idProducto" @change="updateOrderLineProduct(product)">
+                <select v-model="product.idProducto" :disabled="orderModalMode === 'edit' && !product._isNew" @change="updateOrderLineProduct(product)">
                   <option v-for="item in productList" :key="item.idProducto" :value="item.idProducto">
                     {{ item.Nombre }}
                   </option>

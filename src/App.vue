@@ -12,12 +12,17 @@ import { cartCount } from '@/composables/useCart'
 import { useAuth } from '@/composables/useAuth'
 import { notifications, notificationsLoading, notificationsError, unreadNotificationsCount, isNotificationUnread, getNotificationStatusText, loadNotifications, readNotification, clearNotifications } from '@/composables/useNotifications'
 import CartSidebar from '@/components/CartSidebar.vue'
+import { getAdminStockAlerts } from '@/services/adminService'
 
 const route = useRoute()
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const isCartOpen = ref(false)
 const isNotificationsOpen = ref(false)
+const isAdminAlertsOpen = ref(false)
+const adminStockAlerts = ref([])
+const adminStockAlertsLoading = ref(false)
+const adminStockAlertsError = ref('')
 const { authUser, isAuthenticated, isAdmin, clearAuthUser, getLoginRedirect } = useAuth()
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
@@ -28,7 +33,9 @@ const homeRoute = computed(() => {
 const wishlistRoute = computed(() => {
   return isAuthenticated.value ? '/lista-deseos' : getLoginRedirect('/lista-deseos')
 })
-
+const adminStockAlertsCount = computed(() => {
+  return adminStockAlerts.value.length
+})
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
@@ -66,12 +73,16 @@ function handleLogout() {
   closeMobileMenu()
   closeCart()
   closeNotifications()
+  closeAdminAlerts()
   router.push('/')
 }
 
 onMounted(() => {
   if (isAuthenticated.value) {
     loadNotifications()
+  }
+  if (isAdmin.value) {
+    loadAdminStockAlerts()
   }
 })
 
@@ -81,7 +92,50 @@ watch(isAuthenticated, (authenticated) => {
   } else {
     clearNotifications()
   }
+  if (isAdmin.value) {
+    loadAdminStockAlerts()
+  }
 })
+
+function normalizeAdminStockAlert(alert) {
+  return {
+    idProducto: alert.idProducto || alert.idproducto,
+    Nombre: alert.Nombre || alert.nombre || 'Producto sin nombre',
+    Stock: Number(alert.Stock ?? alert.stock ?? 0),
+    Prioridad: alert.Prioridad || alert.prioridad || 'Bajo'
+  }
+}
+
+async function loadAdminStockAlerts() {
+  if (!isAdmin.value) return
+
+  adminStockAlertsLoading.value = true
+  adminStockAlertsError.value = ''
+
+  try {
+    const data = await getAdminStockAlerts()
+    const list = Array.isArray(data) ? data : data ? [data] : []
+    adminStockAlerts.value = list.map(normalizeAdminStockAlert)
+  } catch (error) {
+    adminStockAlerts.value = []
+    adminStockAlertsError.value = 'No se pudieron cargar las alertas de stock.'
+    console.error('Error cargando alertas admin:', error)
+  } finally {
+    adminStockAlertsLoading.value = false
+  }
+}
+
+function toggleAdminAlerts() {
+  isAdminAlertsOpen.value = !isAdminAlertsOpen.value
+
+  if (isAdminAlertsOpen.value) {
+    loadAdminStockAlerts()
+  }
+}
+
+function closeAdminAlerts() {
+  isAdminAlertsOpen.value = false
+}
 </script>
 
 <template>
@@ -169,9 +223,28 @@ watch(isAuthenticated, (authenticated) => {
           <img src="./assets/funkomania.png" alt="Funkomanía" class="admin-header-logo-img" />
         </RouterLink>
         <div class="admin-header-actions">
-          <button class="admin-notification-button" type="button">
-            <Bell :size="22" :stroke-width="2.4" />
-          </button>
+          <div class="admin-alerts-wrap">
+            <button class="admin-notification-button" type="button" title="Alertas stock" @click="toggleAdminAlerts">
+              <Bell :size="22" :stroke-width="2.4" />
+              <span v-if="adminStockAlertsCount > 0" class="notification-count">{{ adminStockAlertsCount }}</span>
+            </button>
+            <div v-if="isAdminAlertsOpen" class="admin-alerts-dropdown">
+              <div class="notification-dropdown-header">
+                <h2>Alertas stock</h2>
+                <button type="button" @click="closeAdminAlerts">Cerrar</button>
+              </div>
+              <p v-if="adminStockAlertsLoading" class="notification-empty">Cargando alertas...</p>
+              <p v-else-if="adminStockAlertsError" class="notification-empty">{{ adminStockAlertsError }}</p>
+              <div v-else-if="adminStockAlerts.length > 0" class="notification-list">
+                <div v-for="alert in adminStockAlerts" :key="alert.idProducto" class="notification-item notification-item-unread">
+                  <span class="notification-type">{{ alert.Prioridad }}</span>
+                  <strong>{{ alert.Nombre }}</strong>
+                  <small>Stock actual: {{ alert.Stock }}</small>
+                </div>
+              </div>
+              <p v-else class="notification-empty">No hay alertas de stock.</p>
+            </div>
+          </div>
           <div class="admin-header-account">
             <div>
               <strong>Cuenta</strong>
