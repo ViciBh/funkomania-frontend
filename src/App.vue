@@ -175,11 +175,14 @@ function closeAdminAlerts() {
             </div>
           </div>
           <div v-if="isAuthenticated" class="header-user-box">
-            <User class="login-icon" :size="21" :stroke-width="2.3" />
-            <span class="header-user-data">
-              <strong>{{ authUser.name || 'Usuario' }}</strong>
-              <small>{{ authUser.username }}</small>
-            </span>
+            <RouterLink to="/cuenta-datos" class="account-link">
+              <User class="login-icon" :size="21" :stroke-width="2.3" />
+              <span class="header-user-data">
+                <strong>{{ authUser.name || 'Usuario' }}</strong>
+                <small>{{ authUser.username }}</small>
+              </span>
+            </RouterLink>
+
             <button class="logout-link" type="button" @click="handleLogout">
               <LogOut :size="18" :stroke-width="2.3" />
               <span>Cerrar sesión</span>
