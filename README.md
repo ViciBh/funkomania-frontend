@@ -1,5 +1,7 @@
 # Funkomanía - Ejecución del frontend
 
+![Banner Funkomania Frontend](banner.png)
+
 Este repositorio global contiene el proyecto Funkomanía organizado mediante submódulos de Git. El frontend se encuentra dentro del submódulo `frontend`.
 
 ## Clonar el repositorio global con submódulos
